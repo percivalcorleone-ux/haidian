@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>看懂划痕亮线</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --ground:#0e1a1d; --ground2:#132428; --line:rgba(231,222,200,.16); --line2:rgba(231,222,200,.4);
+  --cream:#ebe3cf; --cream2:#e2d8c0; --ink:#1b2224; --ink2:#46504f; --muted:#8fa4a2; --text:#e7dec8;
+  --d:#b53d2c; --r:#256a92; --s:#467725; --n:#8f610c; --accent:#d04b40;
+  --serif:"Noto Serif SC","Songti SC","STSong",serif;
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--text)}
+body{font-family:var(--sans);font-size:16px;line-height:1.75}
+.wrap{max-width:1500px;margin:0 auto;padding-inline:clamp(16px,2.6vw,36px);padding-block:22px 40px}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin-bottom:14px}
+header.top h1{font-family:var(--serif);font-weight:900;font-size:clamp(24px,3vw,34px);margin:0;letter-spacing:.04em}
+header.top p{margin:0;color:var(--muted);font-size:14px}
+.lesson{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:1100px){.lesson{grid-template-columns:minmax(0,1fr) 440px;align-items:start}
+  .card{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px);max-height:calc(100vh - 28px);overflow:auto}}
+.stagebox{min-width:0}
+#frame{position:relative;aspect-ratio:16/9;width:100%;border-radius:4px;overflow:hidden;background:#10201f;box-shadow:0 24px 70px rgba(0,0,0,.5),0 0 0 1px var(--line)}
+canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none}
+#hint{position:absolute;right:12px;top:12px;font-size:13px;line-height:1.3;color:#1b2224;background:rgba(235,227,207,.92);border-radius:3px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none}
+#hint:empty{display:none}
+.transport{display:flex;align-items:center;gap:10px;margin-top:10px}
+.transport input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+button.b{font:500 13px/1 var(--sans);color:var(--text);background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+button.b:hover{border-color:var(--line2)}
+button.b[aria-pressed="true"]{background:var(--text);color:var(--ground);border-color:var(--text)}
+button.b.primary{background:var(--accent);border-color:var(--accent);color:#fff6ee}
+button:focus-visible,input:focus-visible,li:focus-visible{outline:2px solid #f2c65c;outline-offset:2px}
+.nav{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+#dots{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0;flex:1}
+#dots button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);font:500 13px/1 var(--mono);cursor:pointer}
+#dots button.seen{color:var(--text);border-color:var(--line2)}
+#dots button.on{background:var(--cream);color:var(--ink);border-color:var(--cream)}
+
+.card{min-width:0;overflow-x:hidden;background:var(--cream);color:var(--ink);border-radius:3px;padding:22px 24px 20px;box-shadow:0 18px 50px rgba(0,0,0,.4);
+  background-image:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.35),rgba(255,255,255,0) 60%),radial-gradient(ellipse at 100% 100%,rgba(120,100,60,.12),rgba(0,0,0,0) 60%)}
+.card .no{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--ink2)}
+.card h2{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.3;margin:4px 0 12px;text-wrap:balance}
+ol.beats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+ol.beats li{min-width:0;overflow-wrap:anywhere}
+ol.beats li{position:relative;padding:8px 10px 8px 30px;border-radius:3px;cursor:pointer;transition:opacity .25s,background .25s;font-size:15.5px;line-height:1.75}
+ol.beats li::before{content:"";position:absolute;left:11px;top:17px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--ink2)}
+ol.beats li.past::before{background:var(--ink2)}
+ol.beats li.future{opacity:.42}
+ol.beats li.now{background:rgba(255,250,236,.75);box-shadow:inset 3px 0 0 var(--accent)}
+ol.beats li.now::before{background:var(--accent);border-color:var(--accent)}
+ol.beats li b{font-weight:700}
+mjx-container[jax="SVG"][display="true"]{margin:.5em 0 !important;max-width:100%;overflow-x:auto;overflow-y:hidden}
+.ctrls{margin-top:14px;display:grid;gap:10px}
+.ctrls:empty{display:none}
+.ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink2)}
+.ctl output{font-family:var(--mono);color:var(--ink)}
+.ctl input{width:100%;accent-color:var(--accent)}
+.ctrls .row{display:flex;flex-wrap:wrap;gap:8px}
+.ctrls button{font:500 13px/1 var(--sans);color:var(--ink);background:rgba(255,255,255,.4);border:1px solid rgba(27,34,36,.25);border-radius:999px;padding:8px 13px;cursor:pointer}
+.ctrls button[aria-pressed="true"]{background:var(--ink);color:var(--cream)}
+.legend{margin-top:14px;padding-top:10px;border-top:1px solid rgba(27,34,36,.15);display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink2)}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px;position:relative;top:-2px}
+.foot{margin-top:18px;color:var(--muted);font-size:13px}
+.foot a{color:var(--text)}
+@media (prefers-reduced-motion: reduce){ol.beats li{transition:none}}
+</style>
+<script>
+window.MathJax={
+  tex:{inlineMath:[["\\(","\\)"]],displayMath:[["$$","$$"]],
+    macros:{dd:"{\\color{#b53d2c}{\\hat d}}",rr:"{\\color{#256a92}{\\hat r}}",ss:"{\\color{#467725}{\\hat s}}",sv:"{\\color{#467725}{\\vec s}}",nn:"{\\color{#8f610c}{\\hat n}}"}},
+  svg:{fontCache:"global"},options:{enableMenu:false},
+  startup:{typeset:false,ready(){MathJax.startup.defaultReady();MathJax.startup.promise.then(()=>{window.__mj=true;if(window.__typeset)window.__typeset();});}}
+};
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>看懂划痕亮线</h1>
+    <p>14 步，从镜子讲到 y = 1/x。动画播到哪一句，右边就亮到哪一句；点任意一句可以回到那一刻。</p>
+  </header>
+  <div class="lesson">
+    <div class="stagebox">
+      <div id="frame">
+        <canvas id="stage" width="1920" height="1080" role="img" aria-label="讲解动画"></canvas>
+        <div id="hint"></div>
+      </div>
+      <div class="transport">
+        <button class="b" id="play" type="button">暂停</button>
+        <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="本步时间轴">
+        <button class="b" id="replay" type="button">重播这一步</button>
+      </div>
+      <nav class="nav" aria-label="步骤">
+        <button class="b" id="prev" type="button">← 上一步</button>
+        <ol id="dots"></ol>
+        <button class="b primary" id="next" type="button">下一步 →</button>
+      </nav>
+    </div>
+    <section class="card" id="card" aria-live="polite">
+      <div class="no" id="stepNo"></div>
+      <h2 id="stepTitle"></h2>
+      <ol class="beats" id="beats"></ol>
+      <div class="ctrls" id="ctrls"></div>
+      <div class="legend">
+        <span><i style="border-color:#b53d2c"></i>d̂ 入射光</span>
+        <span><i style="border-color:#256a92"></i>r̂ 射向眼睛</span>
+        <span><i style="border-color:#8f610c"></i>n̂ 法线</span>
+        <span><i style="border-color:#467725"></i>ŝ 划痕走向</span>
+      </div>
+    </section>
+  </div>
+  <p class="foot">键盘：← → 换步，空格 暂停/继续。完整推导页：<a href="https://claude.ai/artifact/FF3J57BHhRTE2jRpjprypV" target="_blank" rel="noopener">划痕里的双曲线</a> · 短片：<a href="https://claude.ai/artifact/4ySiHuqnxAzzRDcrgt5sUp" target="_blank" rel="noopener">亮线之歌</a></p>
+</div>
+
+<script>
+"use strict";
+(() => {
+const W = 1920, H = 1080, TAU = Math.PI * 2, PI = Math.PI, DEG = PI / 180;
+const RMOT = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x, lerp = (a, b, t) => a + (b - a) * t, inv = (a, b, x) => clamp((x - a) / (b - a), 0, 1);
+const smooth = (a, b, x) => { x = inv(a, b, x); return x * x * (3 - 2 * x); };
+const eio = t => { t = clamp(t, 0, 1); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+const eo = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const rng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+const hash = (a, b = 0, c = 0) => { let h = Math.imul(a | 0, 374761393) ^ Math.imul((b | 0) + 7919, 668265263) ^ Math.imul((c | 0) + 104729, 1274126177); h = Math.imul(h ^ (h >>> 13), 1103515245); h ^= h >>> 16; h = Math.imul(h ^ (h >>> 15), 2246822519); h ^= h >>> 13; return (h >>> 0) / 4294967296; };
+const noise = (() => { const r = rng(1337), p = new Uint8Array(512), gx = new Float32Array(256), gy = new Float32Array(256), perm = []; for (let i = 0; i < 256; i++) perm[i] = i; for (let i = 255; i > 0; i--) { const j = (r() * (i + 1)) | 0; const t = perm[i]; perm[i] = perm[j]; perm[j] = t; } for (let i = 0; i < 512; i++) p[i] = perm[i & 255]; for (let i = 0; i < 256; i++) { const a = r() * TAU; gx[i] = Math.cos(a); gy[i] = Math.sin(a); } const fade = t => t * t * t * (t * (t * 6 - 15) + 10); return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, X = xi & 255, Y = yi & 255; const aa = p[p[X] + Y], ab = p[p[X] + Y + 1], ba = p[p[X + 1] + Y], bb = p[p[X + 1] + Y + 1]; const u = fade(xf), v = fade(yf); return lerp(lerp(gx[aa] * xf + gy[aa] * yf, gx[ba] * (xf - 1) + gy[ba] * yf, u), lerp(gx[ab] * xf + gy[ab] * (yf - 1), gx[bb] * (xf - 1) + gy[bb] * (yf - 1), u), v) * 1.42; }; })();
+
+// ── stage palette (bright on teal paper) ──
+const K = { red: '#f07a5f', blue: '#8fd0ee', green: '#b4de86', gold: '#f2c65c', cream: '#efe8d6', paper: '#ebe3cf', ink: '#15191b', violet: '#c3a6ff', hyp: '#ff6f6a', glow: '#fff1c9', dim: 'rgba(231,222,200,.5)' };
+const ZH = '"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif', ZHS = '"Noto Serif SC","Songti SC",serif', MATH = 'ui-serif,"Iowan Old Style",Palatino,Georgia,serif';
+
+// ── paper craft helpers (after "Steam Song") ──
+const mk = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h)); return c; };
+const g2 = c => c.getContext('2d');
+function cutPath(g, pts, { amp = 1.2, step = 16, seed = 1 } = {}) { g.beginPath(); let first = true, k = 0; const n = pts.length; for (let i = 0; i < n; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % n], L = Math.hypot(x1 - x0, y1 - y0) || 1, s = Math.max(1, Math.round(L / step)), nx = -(y1 - y0) / L, ny = (x1 - x0) / L; for (let j = 0; j < s; j++) { const t = j / s, w = noise(seed * 7.13 + k * .31, seed * 3.7) * amp; k++; const x = lerp(x0, x1, t) + nx * w, y = lerp(y0, y1, t) + ny * w; if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y); } } g.closePath(); }
+function hatch(g, x, y, w, h, { gap = 6, ang = 0, col = '#000', a = .15, lw = 1, wob = 0, seed = 1 } = {}) { const R = rng(seed); g.save(); g.lineWidth = lw; g.strokeStyle = col; const D = Math.hypot(w, h) / 2 + 6; g.translate(x + w / 2, y + h / 2); g.rotate(ang); for (let v = -D; v <= D; v += gap * (.75 + .5 * R())) { g.globalAlpha = a * (.4 + .6 * R()); g.beginPath(); for (let u = -D; u <= D + 36; u += 36) { const yy = v + (wob ? noise(u * .006 + seed, v * .04) * wob : 0); u === -D ? g.moveTo(u, yy) : g.lineTo(u, yy); } g.stroke(); } g.restore(); }
+function stipple(g, x, y, w, h, { n = 400, col = '#fff', r0 = .7, r1 = 1.8, a = .5, seed = 2 } = {}) { const R = rng(seed); g.save(); g.fillStyle = col; for (let i = 0; i < n; i++) { const px = x + R() * w, py = y + R() * h, r = lerp(r0, r1, R()); g.globalAlpha = a * (.35 + .65 * R()); g.fillRect(px - r, py - r, r * 2, r * 2); } g.restore(); }
+function withClip(g, pathFn, fn) { g.save(); pathFn(g); g.clip(); fn(g); g.restore(); }
+const GRAIN = (() => { const s = 384, c = mk(s, s), g = g2(c), id = g.createImageData(s, s), d = id.data, R = rng(99); for (let i = 0; i < s * s; i++) { const v = R(), k = i * 4; if (v < .5) { d[k] = 8; d[k + 1] = 16; d[k + 2] = 18; d[k + 3] = (.5 - v) * 56; } else { d[k] = 250; d[k + 1] = 244; d[k + 2] = 228; d[k + 3] = (v - .5) * 38; } } g.putImageData(id, 0, 0); return c; })();
+const PAPER = (() => { const s = 512, c = mk(s, s), g = g2(c), id = g.createImageData(s, s), d = id.data, R = rng(7); for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) { const k = (y * s + x) * 4, fx = x / s * TAU, fy = y / s * TAU; const v = noise(Math.cos(fx) * 2.2 + 11, Math.sin(fx) * 2.2 + Math.cos(fy) * 2.2) * .6 + noise(Math.cos(fx) * 6 + Math.sin(fy) * 6, Math.sin(fx) * 6 - 4) * .4 + (R() - .5) * .9; if (v < 0) { d[k] = 10; d[k + 1] = 20; d[k + 2] = 22; d[k + 3] = Math.min(255, -v * 70); } else { d[k] = 255; d[k + 1] = 248; d[k + 2] = 232; d[k + 3] = Math.min(255, v * 60); } } g.putImageData(id, 0, 0); return c; })();
+const PAT = (() => { const g = g2(mk(1, 1)); return { grain: g.createPattern(GRAIN, 'repeat'), paper: g.createPattern(PAPER, 'repeat') }; })();
+function paperize(g, k = .5) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = k; g.fillStyle = PAT.paper; g.fillRect(0, 0, g.canvas.width, g.canvas.height); g.restore(); }
+function backdrop(w, h, o = {}) {
+  const c = mk(w, h), g = g2(c), R = rng(o.seed || 5);
+  const gr = g.createLinearGradient(0, 0, 0, h); o.grad.forEach(([s, col]) => gr.addColorStop(s, col)); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  const nc = (sw, sh) => { const m = mk(sw, sh), mg = g2(m), id = mg.createImageData(sw, sh); for (let i = 0; i < sw * sh; i++) { const v = R() * 255; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v; id.data[i * 4 + 3] = 255; } mg.putImageData(id, 0, 0); return m; };
+  g.imageSmoothingEnabled = true;
+  for (const [div, amt] of [[120, .22], [22, .15]]) { const sw = Math.ceil(w / div) + 3, sh = Math.ceil(h / div) + 3, m = nc(sw, sh); g.save(); g.globalCompositeOperation = 'soft-light'; g.globalAlpha = amt; g.drawImage(m, 0, 0, sw, sh, -div * 1.5, -div * 1.5, sw * div, sh * div); g.restore(); }
+  if (o.vstreak) { const rows = 40, m = mk(w, rows), mg = g2(m), id = mg.createImageData(w, rows); for (let x = 0; x < w; x++) { const v = R() - .5; for (let y = 0; y < rows; y++) { const q = 128 + (v + noise(x * .05, y * .6) * .35) * 128, k = (y * w + x) * 4; id.data[k] = id.data[k + 1] = id.data[k + 2] = clamp(q, 0, 255); id.data[k + 3] = 255; } } mg.putImageData(id, 0, 0); g.save(); g.globalCompositeOperation = 'soft-light'; g.globalAlpha = o.vstreak; g.drawImage(m, 0, 0, w, h); g.restore(); }
+  g.save(); g.lineCap = 'round'; for (let i = 0; i < 200; i++) { const x = R() * w, y = R() * h, L = 8 + R() * 50, a = PI / 2 + (R() - .5) * .5; g.strokeStyle = R() < .6 ? `rgba(236,230,212,${.04 + R() * .1})` : `rgba(10,26,30,${.05 + R() * .1})`; g.lineWidth = .5 + R(); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); } g.restore();
+  stipple(g, 0, 0, w, h, { n: 1400, col: '#ece4cf', r0: .5, r1: 1.5, a: .2, seed: (o.seed || 5) + 3 });
+  const rg = g.createRadialGradient(w * .35, h * .2, 0, w * .35, h * .2, Math.hypot(w, h) * .75); rg.addColorStop(0, 'rgba(255,246,226,.09)'); rg.addColorStop(.55, 'rgba(255,246,226,0)'); rg.addColorStop(1, 'rgba(6,20,24,.32)'); g.fillStyle = rg; g.fillRect(0, 0, w, h);
+  return c;
+}
+function sprite(w, h, ax, ay, draw, { ss = 1, pad = 24, shadow = { dx: 6, dy: 9, blur: 11, a: .3 }, paper = .45 } = {}) {
+  const c = mk((w + pad * 2) * ss, (h + pad * 2) * ss), g = g2(c); g.setTransform(ss, 0, 0, ss, pad * ss, pad * ss); g.lineJoin = 'round'; g.lineCap = 'round'; draw(g); if (paper) paperize(g, paper);
+  let s = null; if (shadow) { s = mk(c.width, c.height); const sg = g2(s), off = c.width + 64; sg.shadowColor = `rgba(6,20,24,${shadow.a})`; sg.shadowBlur = shadow.blur * ss; sg.shadowOffsetX = off; sg.drawImage(c, -off, 0); }
+  return { c, s, ax, ay, pad, ss, sh: shadow };
+}
+function put(ctx, sp, x, y, rot = 0, sc = 1, { alpha = 1 } = {}) { const k = sc / sp.ss, ox = -(sp.pad + sp.ax) * sp.ss, oy = -(sp.pad + sp.ay) * sp.ss; if (sp.s) { ctx.save(); ctx.translate(x + sp.sh.dx * sc, y + sp.sh.dy * sc); ctx.rotate(rot); ctx.scale(k, k); ctx.globalAlpha = alpha; ctx.drawImage(sp.s, ox, oy); ctx.restore(); } ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(k, k); ctx.globalAlpha = alpha; ctx.drawImage(sp.c, ox, oy); ctx.restore(); }
+
+// ── stage drawing helpers ──
+function arrowT(c, x0, y0, x1, y1, col, lw = 6, { dash = null, alpha = 1, head = true, shadow = true } = {}) {
+  const L = Math.hypot(x1 - x0, y1 - y0); if (L < 2) return; const a = Math.atan2(y1 - y0, x1 - x0), hd = Math.min(lw * 3.6 + 6, L * .6), ex = x1 - Math.cos(a) * hd * .75, ey = y1 - Math.sin(a) * hd * .75;
+  const one = (ox, oy, cl) => { c.strokeStyle = cl; c.fillStyle = cl; c.lineWidth = lw; c.lineCap = 'round'; c.setLineDash(dash || []); c.beginPath(); c.moveTo(x0 + ox, y0 + oy); c.lineTo((head ? ex : x1) + ox, (head ? ey : y1) + oy); c.stroke(); c.setLineDash([]); if (head) { c.beginPath(); c.moveTo(x1 + ox, y1 + oy); c.lineTo(x1 - Math.cos(a - .42) * hd + ox, y1 - Math.sin(a - .42) * hd + oy); c.lineTo(x1 - Math.cos(a + .42) * hd + ox, y1 - Math.sin(a + .42) * hd + oy); c.closePath(); c.fill(); } };
+  c.save(); c.globalAlpha = alpha; if (shadow) one(5, 7, 'rgba(6,20,24,.32)'); one(0, 0, col); c.restore();
+}
+function line(c, x0, y0, x1, y1, col, lw = 2, dash = null, alpha = 1) { c.save(); c.globalAlpha = alpha; c.strokeStyle = col; c.lineWidth = lw; c.lineCap = 'round'; c.setLineDash(dash || []); c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.restore(); }
+function poly(c, pts, col, lw = 3, { dash = null, alpha = 1, shadow = true } = {}) { if (pts.length < 2) return; c.save(); c.globalAlpha = alpha; c.lineCap = 'round'; c.lineJoin = 'round'; c.setLineDash(dash || []); if (shadow) { c.strokeStyle = 'rgba(6,20,24,.28)'; c.lineWidth = lw; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x + 5, y + 7) : c.moveTo(x + 5, y + 7)); c.stroke(); } c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.restore(); }
+function bead(c, x, y, r = 8, col = K.cream) { c.fillStyle = 'rgba(6,20,24,.32)'; c.beginPath(); c.arc(x + 3, y + 4, r, 0, TAU); c.fill(); c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(x - r * .3, y - r * .35, r * .3, 0, TAU); c.fill(); }
+function say(c, s, x, y, { col = K.cream, size = 30, align = 'left', font = ZH, weight = 500, base = 'middle', halo = true, alpha = 1 } = {}) { c.save(); c.globalAlpha = alpha; c.font = `${weight} ${size}px ${font}`; c.textAlign = align; c.textBaseline = base; if (halo) { c.lineJoin = 'round'; c.lineWidth = size * .22; c.strokeStyle = 'rgba(10,22,25,.8)'; c.strokeText(s, x, y); } c.fillStyle = col; c.fillText(s, x, y); c.restore(); }
+// italic math letter with a hat (unit vector) or arrow (vector) on top, and an optional subscript
+function vlab(c, ch, x, y, col, { hat = true, vec = false, size = 50, sub = '', alpha = 1 } = {}) {
+  c.save(); c.globalAlpha = alpha; c.font = `italic ${size}px ${MATH}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
+  const w = c.measureText(ch).width, tall = 'bdfhklt'.includes(ch) || ch === ch.toUpperCase(), top = y - size * (tall ? .78 : .52);
+  c.lineWidth = size * .2; c.strokeStyle = 'rgba(10,22,25,.8)'; c.strokeText(ch, x, y); c.fillStyle = col; c.fillText(ch, x, y);
+  c.strokeStyle = col; c.lineWidth = size * .07; c.lineCap = 'round';
+  if (hat) { c.beginPath(); c.moveTo(x - w * .32 + 3, top - size * .06); c.lineTo(x + 3, top - size * .2); c.lineTo(x + w * .32 + 3, top - size * .06); c.stroke(); }
+  if (vec) { const y0 = top - size * .14; c.beginPath(); c.moveTo(x - w * .4, y0); c.lineTo(x + w * .45, y0); c.moveTo(x + w * .45 - size * .12, y0 - size * .08); c.lineTo(x + w * .45, y0); c.lineTo(x + w * .45 - size * .12, y0 + size * .08); c.stroke(); }
+  if (sub) { c.font = `italic ${size * .55}px ${MATH}`; c.textAlign = 'left'; c.lineWidth = size * .12; c.strokeText(sub, x + w * .5, y + size * .18); c.fillText(sub, x + w * .5, y + size * .18); }
+  c.restore();
+}
+function tagAt(c, x, y, label, id, k = 1, dir = 1) {
+  if (k <= 0) return; const tx = x + dir * 44, ty = y - 82;
+  c.save(); c.lineCap = 'round'; c.strokeStyle = 'rgba(6,20,24,.25)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 4, y + 6); c.lineTo(tx + 5, ty + 26); c.stroke();
+  c.strokeStyle = '#1b2224'; c.beginPath(); c.moveTo(x, y); c.lineTo(tx, ty + 20); c.stroke();
+  c.fillStyle = '#1b2224'; c.beginPath(); c.arc(x, y, 6, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,245,225,.85)'; c.beginPath(); c.arc(x - 1.5, y - 1.5, 2, 0, TAU); c.fill();
+  c.translate(tx, ty); c.rotate(-.06 * dir); c.scale(k, k); c.shadowColor = 'rgba(6,20,24,.35)'; c.shadowOffsetX = 4; c.shadowOffsetY = 6; c.shadowBlur = 6;
+  cutPath(c, [[-28, -27], [28, -27], [28, 25], [-28, 25]], { amp: .8, step: 9, seed: id }); c.fillStyle = K.paper; c.fill(); c.shadowColor = 'transparent';
+  c.fillStyle = K.ink; c.font = `italic 38px ${MATH}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, 0, 1); c.restore();
+}
+function starAt(c, x, y, s, v) { const g = c.createRadialGradient(x, y, 0, x, y, s * 1.5); g.addColorStop(0, `rgba(255,242,205,${.75 * v})`); g.addColorStop(1, 'rgba(255,230,170,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, s * 1.5, 0, TAU); c.fill(); c.strokeStyle = `rgba(255,251,238,${.5 + .5 * v})`; c.lineWidth = 1.8; c.beginPath(); c.moveTo(x - s, y); c.lineTo(x + s, y); c.moveTo(x, y - s); c.lineTo(x, y + s); const d = s * .42; c.moveTo(x - d, y - d); c.lineTo(x + d, y + d); c.moveTo(x - d, y + d); c.lineTo(x + d, y - d); c.stroke(); }
+function arcAngle(c, x, y, r, a0, a1, col, lw = 2.5) { c.save(); c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.arc(x, y, r, Math.min(a0, a1), Math.max(a0, a1)); c.stroke(); c.restore(); }
+function rightMark(c, x, y, ux, uy, vx, vy, s = 22, col = K.cream) { c.save(); c.strokeStyle = col; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x + ux * s, y + uy * s); c.lineTo(x + (ux + vx) * s, y + (uy + vy) * s); c.lineTo(x + vx * s, y + vy * s); c.stroke(); c.restore(); }
+function peaks(I, w, h, thr, max) { const pts = []; for (let j = 1; j < h - 1; j++) for (let k = 1; k < w - 1; k++) { const p = j * w + k, v = I[p]; if (v < thr) continue; if (v > I[p - 1] && v > I[p - w] && v > I[p - w - 1] && v > I[p - w + 1] && v >= I[p + 1] && v >= I[p + w] && v >= I[p + w - 1] && v >= I[p + w + 1]) pts.push([k, j, v]); } pts.sort((a, b) => b[2] - a[2]); return pts.slice(0, max); }
+function contour(fn, x0, x1, y0, y1, nx, ny) {
+  const dx = (x1 - x0) / nx, dy = (y1 - y0) / ny; x0 += dx * .0037; y0 += dy * .0051; const Wd = nx + 1, g = new Float64Array(Wd * (ny + 1));
+  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) g[j * Wd + i] = fn(x0 + i * dx, y0 + j * dy);
+  const segs = [];
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const a = g[j * Wd + i], b = g[j * Wd + i + 1], cc = g[(j + 1) * Wd + i + 1], d = g[(j + 1) * Wd + i], pa = a > 0, pb = b > 0, pc = cc > 0, pd = d > 0; if (pa === pb && pb === pc && pc === pd) continue; const X = x0 + i * dx, Y = y0 + j * dy, p = [];
+    if (pa !== pb) p.push(X + dx * a / (a - b), Y); if (pb !== pc) p.push(X + dx, Y + dy * b / (b - cc)); if (pc !== pd) p.push(X + dx - dx * cc / (cc - d), Y + dy); if (pd !== pa) p.push(X, Y + dy - dy * d / (d - a));
+    if (p.length === 4) segs.push(...p); else if (p.length === 8) { const m = (a + b + cc + d) / 4; if ((m > 0) === pa) segs.push(...p); else segs.push(p[0], p[1], p[6], p[7], p[2], p[3], p[4], p[5]); } }
+  return segs;
+}
+// ── physics: parallel light at incidence i from +y, eye E = (0, −h tan i, h), groove tangent s = (y−v, u−x, 0) ──
+function Fp(x, y, u, v, h, sI, tI, sign = 1) { const sx = y - v, sy = u - x, ds = -sI * sy, ey = -h * tI - y, en = Math.sqrt(x * x + ey * ey + h * h); return ds - sign * (-x * sx + ey * sy) / en; }
+function terms(x, y, u, v, h, sI, tI) { let sx = y - v, sy = u - x; const n = Math.hypot(sx, sy); if (n < 1e-12) return [0, 0, 0, 0]; sx /= n; sy /= n; const ex = -x, ey = -h * tI - y, en = Math.sqrt(ex * ex + ey * ey + h * h); return [-sI * sy, (ex * sx + ey * sy) / en, sx, sy]; }
+function Hs(x, y, u, v, s2, c2) { return s2 * x * y - v * x + u * c2 * y; }
+
+// top-view frame shared by several steps (units: tray radius ≈ 1.15)
+const TV = { cx: .1, cy: .05, s: 390 };
+const tx = x => 960 + (x - TV.cx) * TV.s, ty = y => 540 - (y - TV.cy) * TV.s, itx = px => (px - 960) / TV.s + TV.cx, ity = py => TV.cy - (py - 540) / TV.s;
+const VIEW = [itx(0), itx(W), ity(H), ity(0)];
+function segDraw(c, segs, col, lw, { dash = null, alpha = 1, glow = 0, clip = null } = {}) { c.save(); if (clip) { c.beginPath(); c.arc(tx(clip[0]), ty(clip[1]), clip[2] * TV.s, 0, TAU); c.clip(); } c.globalAlpha = alpha; c.strokeStyle = col; c.lineWidth = lw; c.lineCap = 'round'; c.setLineDash(dash || []); if (glow) { c.shadowColor = col; c.shadowBlur = glow; } c.beginPath(); for (let k = 0; k < segs.length; k += 4) { c.moveTo(tx(segs[k]), ty(segs[k + 1])); c.lineTo(tx(segs[k + 2]), ty(segs[k + 3])); } c.stroke(); c.restore(); }
+
+// ── shared art, built lazily ──
+const ART = {};
+function art(name) { if (ART[name]) return ART[name]; return ART[name] = MAKE[name](); }
+const MAKE = {
+  wall: () => backdrop(W, H, { grad: [[0, '#2f5d63'], [.6, '#274f55'], [1, '#1d3e44']], vstreak: .3, seed: 11 }),
+  grid: () => { const c = backdrop(W, H, { grad: [[0, '#2f666c'], [1, '#24545a']], vstreak: .15, seed: 91 }), q = g2(c); for (let k = 0; k <= 40; k++) { const major = k % 2 === 0; q.strokeStyle = `rgba(231,222,200,${major ? .12 : .05})`; q.lineWidth = major ? 1.4 : 1; const x = k * 60; q.beginPath(); for (let y = 0; y <= H; y += 40) q.lineTo(x + noise(k * .7, y * .01) * 1.3, y); q.stroke(); if (k <= 18) { const y = k * 60; q.beginPath(); for (let x2 = 0; x2 <= W; x2 += 40) q.lineTo(x2, y + noise(x2 * .01, k * .7) * 1.3); q.stroke(); } } return c; },
+  room: () => { const c = backdrop(W, H, { grad: [[0, '#548b8e'], [.5, '#467e82'], [1, '#3a6f74']], vstreak: .4, seed: 12 }), g = g2(c), y0 = 470; const tg = g.createLinearGradient(0, y0, 0, H); tg.addColorStop(0, '#5f6c65'); tg.addColorStop(.05, '#4d5b54'); tg.addColorStop(1, '#27312f'); g.fillStyle = tg; g.fillRect(0, y0, W, H - y0); hatch(g, 0, y0, W, H - y0, { gap: 3.2, col: '#1a2422', a: .36, wob: 1.6, seed: 3 }); g.fillStyle = 'rgba(210,214,196,.28)'; g.fillRect(0, y0, W, 3); const pool = g.createRadialGradient(W * .5, y0 + 200, 0, W * .5, y0 + 200, 900); pool.addColorStop(0, 'rgba(255,226,170,.14)'); pool.addColorStop(1, 'rgba(255,226,170,0)'); g.fillStyle = pool; g.fillRect(0, y0, W, H - y0); return c; },
+  tray: () => { const T = mk(760, 760), q = g2(T), R = rng(21); q.translate(380, 380); const bg = q.createRadialGradient(-80, -120, 20, 0, 0, 380); bg.addColorStop(0, '#9aa5a4'); bg.addColorStop(1, '#5c686a'); q.fillStyle = bg; q.beginPath(); q.arc(0, 0, 380, 0, TAU); q.fill(); for (let r = 3; r < 378; r += 2.1) { const segs = 5 + ((R() * 9) | 0); let a0 = R() * TAU; for (let s = 0; s < segs; s++) { const da = TAU / segs * (.6 + R() * .8); q.strokeStyle = R() < .5 ? `rgba(238,240,232,${.05 + R() * .14})` : `rgba(20,30,34,${.05 + R() * .14})`; q.lineWidth = .8 + R() * 1.2; q.beginPath(); q.arc(0, 0, r, a0, a0 + da); q.stroke(); a0 += da; } } q.globalCompositeOperation = 'destination-in'; q.fillStyle = '#000'; q.beginPath(); q.arc(0, 0, 380, 0, TAU); q.fill(); return T; },
+  shade: () => sprite(220, 150, 110, 10, g => { g.translate(110, 10); const sh = gg => { gg.beginPath(); gg.moveTo(-22, 0); gg.lineTo(22, 0); gg.lineTo(100, 128); gg.quadraticCurveTo(0, 146, -100, 128); gg.closePath(); }; sh(g); g.fillStyle = '#cf4b40'; g.fill(); withClip(g, sh, gg => { const lg = gg.createLinearGradient(-100, 0, 100, 0); lg.addColorStop(0, 'rgba(255,240,220,.18)'); lg.addColorStop(.45, 'rgba(0,0,0,0)'); lg.addColorStop(1, 'rgba(40,6,6,.35)'); gg.fillStyle = lg; gg.fillRect(-110, 0, 220, 150); hatch(gg, -110, 0, 220, 150, { gap: 3.6, ang: PI / 2, col: '#6d1f1b', a: .14, seed: 23 }); }); g.fillStyle = '#1b1614'; g.fillRect(-26, -10, 52, 14); g.fillStyle = '#fff3d6'; g.beginPath(); g.ellipse(0, 131, 92, 11, 0, 0, TAU); g.fill(); }, { ss: 1.4 }),
+  eye: () => sprite(120, 70, 60, 35, g => { g.translate(60, 35); g.fillStyle = K.paper; g.beginPath(); g.moveTo(-54, 0); g.quadraticCurveTo(0, -44, 54, 0); g.quadraticCurveTo(0, 44, -54, 0); g.fill(); g.strokeStyle = K.ink; g.lineWidth = 3; g.stroke(); g.fillStyle = '#2f6369'; g.beginPath(); g.arc(0, 0, 18, 0, TAU); g.fill(); g.fillStyle = K.ink; g.beginPath(); g.arc(0, 0, 9, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(-5, -5, 3.5, 0, TAU); g.fill(); }, { ss: 1.4, pad: 14, shadow: { dx: 5, dy: 7, blur: 6, a: .3 } }),
+  bulb: () => sprite(110, 120, 55, 80, g => { g.translate(55, 80); g.fillStyle = '#cf4b40'; g.beginPath(); g.moveTo(-14, -78); g.lineTo(14, -78); g.lineTo(52, -12); g.quadraticCurveTo(0, -4, -52, -12); g.closePath(); g.fill(); g.fillStyle = '#fff3d6'; g.beginPath(); g.arc(0, 0, 22, 0, TAU); g.fill(); }, { ss: 1.3, pad: 14, shadow: { dx: 6, dy: 8, blur: 8, a: .3 } }),
+};
+function trayTop(c, u, v, R, { alpha = 1 } = {}) {
+  const X = tx(u), Y = ty(v), r = R * TV.s;
+  c.save(); c.globalAlpha = alpha; c.fillStyle = 'rgba(6,20,24,.45)'; c.filter = 'blur(12px)'; c.beginPath(); c.arc(X + 18, Y + 26, r + 6, 0, TAU); c.fill(); c.filter = 'none';
+  c.fillStyle = '#2b3437'; c.beginPath(); c.arc(X, Y, r + 8, 0, TAU); c.fill();
+  c.drawImage(art('tray'), X - r, Y - r, 2 * r, 2 * r); c.fillStyle = 'rgba(12,26,30,.35)'; c.beginPath(); c.arc(X, Y, r, 0, TAU); c.fill();
+  c.lineWidth = 3; c.strokeStyle = 'rgba(232,236,226,.5)'; c.beginPath(); c.arc(X, Y, r + 2, PI * 1.05, PI * 1.9); c.stroke(); c.restore();
+}
+function mirrorStrip(c, x0, x1, y) { c.save(); c.shadowColor = 'rgba(6,20,24,.4)'; c.shadowOffsetY = 12; c.shadowBlur = 16; cutPath(c, [[x0, y], [x1, y], [x1, y + 40], [x0, y + 40]], { amp: .8, step: 30, seed: 5 }); c.fillStyle = '#9aa6a7'; c.fill(); c.restore(); withClip(c, gg => cutPath(gg, [[x0, y], [x1, y], [x1, y + 40], [x0, y + 40]], { amp: .8, step: 30, seed: 5 }), gg => hatch(gg, x0, y, x1 - x0, 40, { gap: 3, col: '#3d4a4c', a: .35, seed: 6 })); line(c, x0, y, x1, y, 'rgba(250,250,240,.85)', 3); }
+function eyeAt(c, x, y, rot = 0, sc = 1) { put(c, art('eye'), x, y, rot, sc); }
+function bulbAt(c, x, y, on = 1) { if (on > 0) { c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y, 0, x, y, 190); g.addColorStop(0, `rgba(255,230,180,${.4 * on})`); g.addColorStop(1, 'rgba(255,220,160,0)'); c.fillStyle = g; c.fillRect(x - 200, y - 200, 400, 400); c.restore(); } put(c, art('bulb'), x, y); }
+function axes2(c, O, S, { xl = 'x', yl = 'y', x0 = -4, x1 = 5.6, y0 = -2.6, y1 = 3.4 } = {}) { const P = (x, y) => [O[0] + x * S, O[1] - y * S]; arrowT(c, ...P(x0, 0), ...P(x1, 0), 'rgba(231,222,200,.7)', 3, { shadow: false }); arrowT(c, ...P(0, y0), ...P(0, y1), 'rgba(231,222,200,.7)', 3, { shadow: false }); say(c, xl, P(x1, 0)[0] - 10, P(x1, 0)[1] + 34, { font: MATH, size: 36, align: 'right', weight: 400 }); say(c, yl, P(0, y1)[0] + 20, P(0, y1)[1] + 14, { font: MATH, size: 36, weight: 400 }); }
+// ═══════════════════════ THE STEPS ═══════════════════════
+const R = String.raw, STEPS = [];
+const Step = o => { STEPS.push(o); return o; };
+
+// 1 · phenomenon: a lamp over a spun-brushed tray (point light, finite eye; glint where (d̂ − r̂)·ŝ ≈ 0)
+Step({
+  title: '先看现象', dur: 9, live: true, hint: '拖动吊灯 · 点托盘让它转快些',
+  beats: [
+    [0, R`这是一个金属托盘，表面布满一圈圈同心圆的细划痕，像唱片的纹路。`],
+    [1.6, R`打开灯。亮起来的不是整个盘子，而是<b>一条细细的亮线</b>。`],
+    [3.5, R`灯一晃，亮线跟着转。托盘自己也在慢慢转，亮线却不跟着托盘转。`],
+    [6.3, R`亮线总是穿过两个固定的点：盘子的<b>圆心 C</b>，和<b>灯在盘面上的倒影 O</b>。`],
+    [8, R`接下来一步步回答两个问题：为什么只亮一条线？这条线是什么形状？`],
+  ],
+  CX: 960, CY: 790, RS: 380, SA: .5, CA: .866, E: [0, -5.196, 3], GN: 260,
+  P(x, y, z) { return [this.CX + x * this.RS, this.CY - (y * this.SA + z * this.CA) * this.RS]; },
+  lamp(phi) { return [-.55 + 1.6 * Math.sin(phi), 1.4, 1.0 + 1.6 * (1 - Math.cos(phi))]; },
+  enter() { this.phi = .32; this.om = 0; this.spin = 0; this.spinV = .25; this.drag = false; if (!this.glC) { this.glC = mk(this.GN, this.GN); this.glImg = g2(this.glC).createImageData(this.GN, this.GN); this.glI = new Float32Array(this.GN * this.GN); } },
+  update(t, dt) { if (!this.drag) { this.om += (-4.4 * Math.sin(this.phi) - .07 * this.om) * dt; this.phi += this.om * dt; } this.spinV += (.25 - this.spinV) * .6 * dt; this.spin += this.spinV * dt; },
+  glint() {
+    const L = this.L = this.lamp(this.phi), [Ex, Ey, Ez] = this.E, tt = Ez / (Ez + L[2]); this.O = [Ex + tt * (L[0] - Ex), Ey + tt * (L[1] - Ey)];
+    const N = this.GN, d = this.glImg.data, I = this.glI, spin = this.spin;
+    for (let j = 0; j < N; j++) { const y = 1 - (j + .5) * 2 / N; for (let k = 0; k < N; k++) { const x = -1 + (k + .5) * 2 / N, p = j * N + k, o = p * 4, r2 = x * x + y * y; if (r2 > .998) { d[o + 3] = 0; I[p] = 0; continue; }
+      const rho = Math.sqrt(r2) + 1e-9, sx = y / rho, sy = -x / rho; let dx = x - L[0], dy = y - L[1], dz = -L[2]; const dn = Math.sqrt(dx * dx + dy * dy + dz * dz); dx /= dn; dy /= dn; dz /= dn;
+      let rx = Ex - x, ry = Ey - y, rz = Ez; const rn = Math.sqrt(rx * rx + ry * ry + rz * rz); rx /= rn; ry /= rn; rz /= rn;
+      const f = (dx - rx) * sx + (dy - ry) * sy; let th = Math.atan2(y, x) - spin; th = ((th % TAU) + TAU) % TAU; const ring = Math.floor(rho * 120), sp = .3 + .7 * hash(ring, Math.floor(th / TAU * (24 + ring * .9)), 7);
+      const bx = rx - dx, by = ry - dy, bz = rz - dz, mir = Math.exp(-((bx * bx + by * by) / (bx * bx + by * by + bz * bz)) / .00012);
+      const v = clamp((Math.exp(-f * f / .00008) * sp + mir * .55) * clamp(3.2 / (dn * dn), .4, 1.0), 0, 1.2); I[p] = v * (.4 + .6 * sp); d[o] = 255; d[o + 1] = 228; d[o + 2] = 176; d[o + 3] = Math.min(255, v * 230); } }
+    g2(this.glC).putImageData(this.glImg, 0, 0); this.sparks = peaks(I, N, N, .75, 22).map(([k, j, v]) => [-1 + (k + .5) * 2 / N, 1 - (j + .5) * 2 / N, v]);
+  },
+  draw(c, t) {
+    c.drawImage(art('room'), 0, 0); this.glint();
+    const { CX, CY, RS, SA } = this, on = smooth(1.2, 2.2, t);
+    c.save(); c.filter = 'blur(14px)'; c.fillStyle = 'rgba(6,20,24,.45)'; c.beginPath(); c.ellipse(CX + 40, CY + 44, RS + 16, (RS + 16) * SA, 0, 0, TAU); c.fill(); c.restore();
+    c.fillStyle = '#2b3437'; c.beginPath(); c.ellipse(CX, CY + 22, RS + 8, (RS + 8) * SA, 0, 0, TAU); c.fill(); c.fillStyle = '#556164'; c.beginPath(); c.ellipse(CX, CY + 8, RS + 8, (RS + 8) * SA, 0, 0, PI); c.fill();
+    c.save(); c.translate(CX, CY); c.scale(1, SA); c.save(); c.rotate(this.spin); c.drawImage(art('tray'), -RS, -RS, RS * 2, RS * 2); c.restore();
+    c.fillStyle = `rgba(8,18,22,${.35 * (1 - on)})`; c.beginPath(); c.arc(0, 0, RS, 0, TAU); c.fill();
+    c.globalCompositeOperation = 'lighter'; c.globalAlpha = on; c.drawImage(this.glC, -RS, -RS, RS * 2, RS * 2); c.restore();
+    c.lineWidth = 3; c.strokeStyle = '#1d2427'; c.beginPath(); c.ellipse(CX, CY, RS + 6, (RS + 6) * SA, 0, 0, TAU); c.stroke();
+    if (on > .5) { c.save(); c.globalCompositeOperation = 'lighter'; for (const [x, y, v] of this.sparks) starAt(c, CX + x * RS, CY - y * SA * RS, 5 + 9 * v, Math.min(1, v) * on); c.restore(); }
+    const [lx, ly] = this.P(...this.L), [px, py] = this.P(-.55, 1.4, 2.6), ang = Math.atan2(lx - px, ly - py);
+    line(c, px, py, lx, ly - 110, '#161a1b', 3); put(c, art('shade'), lx, ly - 110, -ang * .9, 1);
+    if (on > 0) { c.save(); c.globalCompositeOperation = 'lighter'; const gl = c.createRadialGradient(lx, ly + 15, 0, lx, ly + 15, 260); gl.addColorStop(0, `rgba(255,230,180,${.38 * on})`); gl.addColorStop(1, 'rgba(255,220,160,0)'); c.fillStyle = gl; c.fillRect(lx - 270, ly - 250, 540, 540); c.restore(); }
+    tagAt(c, CX, CY, 'C', 51, t < 6.3 ? 0 : 1, 1);
+    tagAt(c, CX + this.O[0] * RS, CY - this.O[1] * SA * RS, 'O', 52, t < 6.7 ? 0 : 1, -1);
+  },
+  down(x, y) { const [lx, ly] = this.P(...this.lamp(this.phi)); if (Math.hypot(x - lx, y - (ly - 50)) < 140) { this.drag = true; this.om = 0; return true; } if (((x - this.CX) / this.RS) ** 2 + ((y - this.CY) / (this.RS * this.SA)) ** 2 < 1) { this.spinV += 5; return 'tap'; } return false; },
+  move(x) { if (!this.drag) return; const xl = (x - this.CX) / this.RS; this.phi = Math.asin(clamp((xl + .55) / 1.6, -.9, .9)); },
+  up() { this.drag = false; },
+});
+// 2 · the flat mirror: law of reflection, and the one point O that reflects the lamp into the eye
+Step({
+  title: '镜子怎么反光', dur: 10, hint: '拖动灯或眼睛',
+  beats: [
+    [0, R`先从最普通的镜子说起。图中垂直于镜面的虚线叫<b>法线</b>。`],
+    [1.6, R`光打到镜面会反弹，规则只有一条：<b>入射角 = 反射角</b>。两个角都从法线量起。`],
+    [4.2, R`灯发出的光射向镜面各处，各自反弹到不同方向。`],
+    [6, R`只有一个点反弹的光恰好进入眼睛。这个点记作 <b>O</b>。`],
+    [7.6, R`从眼睛看过去，灯好像在镜子下面（虚线画的灯），这就是<b>倒影</b>。O 正好在眼睛和倒影的连线上。拖动灯或眼睛，O 会跟着移动。`],
+  ],
+  enter() { this.L = [520, 300]; this.E = [1440, 380]; this.drag = null; },
+  geo() { const MY = 800, L = this.L, E = this.E, Lp = [L[0], 2 * MY - L[1]], t = (MY - E[1]) / (Lp[1] - E[1]); return { MY, Lp, O: [E[0] + t * (Lp[0] - E[0]), MY] }; },
+  ray(c, L, P, len, prog, col, lw, alpha = 1) { // incident L→P then reflected, drawn up to prog∈[0,2]
+    const a = clamp(prog, 0, 1), b = clamp(prog - 1, 0, 1), dx = P[0] - L[0], dy = P[1] - L[1], n = Math.hypot(dx, dy), rx = dx / n, ry = -dy / n;
+    const A = [lerp(L[0], P[0], a), lerp(L[1], P[1], a)]; poly(c, [L, A], col, lw, { alpha });
+    if (b > 0) { const B = [P[0] + rx * len * b, P[1] + ry * len * b]; arrowT(c, P[0], P[1], B[0], B[1], col, lw, { alpha }); }
+    else if (a > 0 && a < 1) bead(c, A[0], A[1], 8);
+    return [rx, ry];
+  },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const { MY, Lp, O } = this.geo(), L = this.L, E = this.E;
+    mirrorStrip(c, 180, 1740, MY); say(c, '镜面', 1720, MY + 72, { align: 'right', size: 26, col: K.dim });
+    if (t < 4.2) {
+      const P = [O[0] - 280, MY], prog = clamp(t / 1.3, 0, 2);
+      line(c, P[0], MY, P[0], MY - 330, K.gold, 3, [10, 10]); say(c, '法线', P[0] + 14, MY - 320, { col: K.gold, size: 26 });
+      const [rx, ry] = this.ray(c, L, P, 520, prog, K.red, 6);
+      if (t > 1.6) { const al = smooth(1.6, 2.3, t), a1 = Math.atan2(L[1] - P[1], L[0] - P[0]), a2 = Math.atan2(ry, rx); c.globalAlpha = al; arcAngle(c, P[0], P[1], 90, a1, -PI / 2, K.cream, 3); arcAngle(c, P[0], P[1], 104, -PI / 2, a2, K.cream, 3); c.globalAlpha = 1;
+        say(c, '入射角', P[0] + 120 * Math.cos((a1 - PI / 2) / 2) - 40, P[1] + 140 * Math.sin((a1 - PI / 2) / 2), { align: 'right', size: 26, alpha: al }); say(c, '反射角', P[0] + 150 * Math.cos((a2 - PI / 2) / 2) + 20, P[1] + 150 * Math.sin((a2 - PI / 2) / 2), { size: 26, alpha: al });
+        say(c, '入射角 = 反射角', 960, 160, { align: 'center', size: 44, font: ZHS, weight: 600, alpha: al }); }
+    } else {
+      const u = t - 4.2;
+      for (let k = -3; k <= 3; k++) { const P = [O[0] + k * 125, MY], st = Math.abs(k) * .16, prog = clamp((u - st) / .9, 0, 2), hi = k === 0; if (prog <= 0) continue;
+        const al = hi ? 1 : lerp(1, .35, smooth(1.8, 2.4, u)); const len = hi ? Math.hypot(E[0] - O[0], E[1] - O[1]) - 40 : 560; this.ray(c, L, P, len, prog, hi ? K.gold : K.red, hi ? 7 : 4.5, al); }
+      if (u > 1.8) { line(c, O[0], MY, O[0], MY - 260, K.gold, 3, [10, 10], smooth(1.8, 2.4, u)); tagAt(c, O[0], MY, 'O', 61, 1, -1); }
+      if (t > 7.6) { const al = smooth(7.6, 8.4, t); c.save(); c.globalAlpha = al * .7; c.setLineDash([8, 8]); c.strokeStyle = K.cream; c.lineWidth = 3; c.beginPath(); c.arc(Lp[0], Lp[1], 26, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(Lp[0] - 50, Lp[1] + 12); c.lineTo(Lp[0], Lp[1] + 78); c.lineTo(Lp[0] + 50, Lp[1] + 12); c.stroke(); c.restore();
+        line(c, E[0], E[1], Lp[0], Lp[1], K.cream, 2.5, [8, 10], al * .8); line(c, L[0], L[1], Lp[0], Lp[1], K.cream, 1.5, [3, 9], al * .5); say(c, '灯的倒影', Lp[0] + 50, Lp[1] + 30, { size: 26, alpha: al }); }
+    }
+    bulbAt(c, L[0], L[1]); say(c, '灯', L[0] - 70, L[1] - 30, { size: 28, align: 'right' });
+    eyeAt(c, E[0], E[1], -.35); say(c, '眼睛', E[0] + 70, E[1] - 30, { size: 28 });
+  },
+  down(x, y) { if (Math.hypot(x - this.L[0], y - this.L[1]) < 90) { this.drag = 'L'; return true; } if (Math.hypot(x - this.E[0], y - this.E[1]) < 90) { this.drag = 'E'; return true; } return false; },
+  move(x, y) { if (!this.drag) return; const p = [clamp(x, 200, 1720), clamp(y, 120, 700)]; if (this.drag === 'L') this.L = p; else this.E = p; },
+  up() { this.drag = null; },
+});
+// 3 · arrows: components and unit vectors
+Step({
+  title: '用箭头表示方向', dur: 8, hint: '拖动红箭头的尖端',
+  beats: [
+    [0, R`描述"光往哪边走"要用<b>方向</b>。物理里用<b>箭头</b>表示方向，箭头有长度，也有指向。`],
+    [2, R`任何箭头都能拆成两段：一段沿横向，一段沿纵向。写成 $$\vec a=(a_x,\;a_y)$$`],
+    [4.5, R`如果只关心方向、不关心长短，就把箭头缩到长度 1，并在字母上加一顶小帽子：$$\hat a=\frac{\vec a}{|\vec a|}$$ \(|\vec a|\) 表示箭头的长度。`],
+    [6.3, R`空间里再加一个上下方向 z，写成 \((x,\,y,\,z)\)。后面的 \(\dd\)（入射光）、\(\rr\)（射向眼睛的光）、\(\nn\)（法线）、\(\ss\)（划痕的走向）都是这种长度为 1 的方向箭头。`],
+  ],
+  enter() { this.a = [2.4, 1.6]; this.drag = false; },
+  draw(c, t) {
+    c.drawImage(art('grid'), 0, 0); const O = [720, 720], S = 150, P = (x, y) => [O[0] + x * S, O[1] - y * S], a = this.a, n = Math.hypot(a[0], a[1]);
+    axes2(c, O, S, { x0: -3.8, x1: 7.2, y0: -2, y1: 4.2 });
+    const g = eo(t / 1.3), tip = P(a[0] * g, a[1] * g), ca = smooth(2, 3, t), ua = smooth(4.5, 6, t);
+    if (ca > 0) { line(c, ...tip, P(a[0], 0)[0], O[1], K.cream, 2, [7, 8], ca * .8); line(c, ...tip, O[0], P(0, a[1])[1], K.cream, 2, [7, 8], ca * .8);
+      arrowT(c, ...O, ...P(a[0], 0), K.gold, 6, { alpha: ca }); arrowT(c, ...O, ...P(0, a[1]), K.green, 6, { alpha: ca });
+      say(c, `横向 ${a[0].toFixed(2)}`, P(a[0] / 2, 0)[0], O[1] + 44, { align: 'center', font: MATH, size: 34, col: K.gold, alpha: ca }); say(c, `纵向 ${a[1].toFixed(2)}`, O[0] - 24, P(0, a[1] / 2)[1], { align: 'right', font: MATH, size: 34, col: K.green, alpha: ca }); }
+    arrowT(c, ...O, ...tip, K.red, 8, { alpha: 1 - ua * .55 }); vlab(c, 'a', tip[0] + 34, tip[1] - 8, K.red, { hat: false, vec: true, alpha: 1 - ua * .5 });
+    if (ua > 0) { const k = lerp(n, 1, ua), U = P(a[0] / n * k, a[1] / n * k); arrowT(c, ...O, ...U, K.blue, 8, { alpha: ua }); vlab(c, 'a', U[0] + 22, U[1] + 56, K.blue, { alpha: ua }); if (ua > .95) say(c, '长度 = 1', U[0] + 50, U[1] + 40, { size: 26, col: K.blue }); }
+    say(c, `a = (${a[0].toFixed(2)}, ${a[1].toFixed(2)})    |a| = ${n.toFixed(2)}`, 80, 80, { font: MATH, size: 36 });
+    if (t > 6.3) { const al = smooth(6.3, 7, t), G = [1640, 860]; c.globalAlpha = al; arrowT(c, ...G, G[0] + 150, G[1], K.cream, 4, { shadow: false }); arrowT(c, ...G, G[0] - 90, G[1] + 70, K.cream, 4, { shadow: false }); arrowT(c, ...G, G[0], G[1] - 150, K.cream, 4, { shadow: false }); c.globalAlpha = 1;
+      say(c, 'x', G[0] + 170, G[1], { font: MATH, size: 32, alpha: al }); say(c, 'y', G[0] - 120, G[1] + 90, { font: MATH, size: 32, alpha: al }); say(c, 'z（上）', G[0] + 12, G[1] - 170, { size: 28, alpha: al }); }
+  },
+  down(x, y) { const O = [720, 720], S = 150, tip = [O[0] + this.a[0] * S, O[1] - this.a[1] * S]; if (Math.hypot(x - tip[0], y - tip[1]) < 80) { this.drag = true; return true; } return false; },
+  move(x, y) { if (!this.drag) return; const O = [720, 720], S = 150; this.a = [clamp((x - O[0]) / S, -3.6, 7), clamp((O[1] - y) / S, -1.8, 4)]; if (Math.hypot(...this.a) < .3) this.a = [.3, 0]; },
+  up() { this.drag = false; },
+});
+// 4 · dot product = the length of the shadow on a line
+Step({
+  title: '点积：影子有多长', dur: 9.5, hint: '拖动红箭头，或拖动绿线末端的珠子',
+  beats: [
+    [0, R`两个箭头的<b>点积</b> \(\vec a\cdot\ss\) 有一个直观意思：让光垂直于 \(\ss\) 照过来，\(\vec a\) 在 \(\ss\) 这条线上投下的<b>影子长度</b>。`],
+    [3, R`\(\vec a\) 顺着 \(\ss\) 时影子最长；<b>两者垂直时影子为 0</b>；\(\vec a\) 背着 \(\ss\) 时影子是负的。`],
+    [7.2, R`用分量计算也很简单：$$\vec a\cdot\ss=|\vec a|\cos\theta=a_xs_x+a_ys_y+a_zs_z$$ 其中 \(\theta\) 是两个箭头的夹角。`],
+  ],
+  enter() { this.phs = 12 * DEG; this.user = null; this.drag = null; },
+  angA(t) { if (this.user != null) return this.user; const d = x => x * DEG; if (t < 3) return d(52); if (t < 4.6) return lerp(d(52), d(102), eio((t - 3) / 1.6)); if (t < 5.3) return d(102); if (t < 6.6) return lerp(d(102), d(200), eio((t - 5.3) / 1.3)); if (t < 7.2) return d(200); return lerp(d(200), d(412), eio((t - 7.2) / 1.6)) ; },
+  draw(c, t) {
+    c.drawImage(art('grid'), 0, 0); const O = [920, 600], S = 170, La = 2.6, sx = Math.cos(this.phs), sy = Math.sin(this.phs), P = (x, y) => [O[0] + x * S, O[1] - y * S];
+    const aa = this.angA(t), ax = La * Math.cos(aa), ay = La * Math.sin(aa), dot = ax * sx + ay * sy, foot = P(dot * sx, dot * sy), tip = P(ax, ay);
+    // light rays perpendicular to ŝ
+    c.save(); c.globalAlpha = .18; for (let k = -6; k <= 6; k++) { const bx = O[0] + k * 110 * sx, by = O[1] - k * 110 * sy; line(c, bx - sy * 520, by - sx * 520, bx, by, K.cream, 2, [4, 12]); } c.restore();
+    poly(c, [P(-5 * sx, -5 * sy), P(5 * sx, 5 * sy)], K.green, 4); arrowT(c, ...O, ...P(sx, sy), K.green, 8); vlab(c, 's', P(sx, sy)[0] - 10, P(sx, sy)[1] + 62, K.green);
+    const hd = P(4.2 * sx, 4.2 * sy); bead(c, hd[0], hd[1], 12, K.green);
+    c.save(); c.lineCap = 'butt'; line(c, O[0], O[1], foot[0], foot[1], 'rgba(6,16,18,.75)', 18); c.restore();
+    line(c, ...tip, ...foot, K.cream, 2.5, [7, 7]); { const pl = Math.hypot(tip[0] - foot[0], tip[1] - foot[1]); if (Math.abs(dot) > .08 && pl > 30) { const sg = Math.sign(dot); rightMark(c, foot[0], foot[1], -sg * sx, sg * sy, (tip[0] - foot[0]) / pl, (tip[1] - foot[1]) / pl, 20); } }
+    arrowT(c, ...O, ...tip, K.red, 8); vlab(c, 'a', tip[0] + 30 * Math.cos(aa), tip[1] - 30 * Math.sin(aa) + 16, K.red, { hat: false, vec: true });
+    const th = Math.acos(clamp(dot / La, -1, 1));
+    say(c, `a·ŝ = ${dot >= 0 ? '' : '−'}${Math.abs(dot).toFixed(2)}`, foot[0] + 10, foot[1] + 50, { font: MATH, size: 38, col: K.glow });
+    say(c, `|a| = ${La.toFixed(2)}    θ = ${(th / DEG).toFixed(0)}°    |a| cos θ = ${(La * Math.cos(th)).toFixed(2)}`, 80, 80, { font: MATH, size: 34 });
+    if (Math.abs(dot) < .06) say(c, '垂直：影子为 0', 960, 980, { align: 'center', size: 40, font: ZHS, weight: 600, col: K.glow });
+    else if (dot < 0 && t > 5) say(c, '背着 ŝ：影子为负', 960, 980, { align: 'center', size: 40, font: ZHS, weight: 600, col: K.glow });
+  },
+  down(x, y) { const O = [920, 600], S = 170, La = 2.6, aa = this.angA(99), tip = [O[0] + La * Math.cos(aa) * S, O[1] - La * Math.sin(aa) * S], hd = [O[0] + 4.2 * Math.cos(this.phs) * S, O[1] - 4.2 * Math.sin(this.phs) * S];
+    if (Math.hypot(x - hd[0], y - hd[1]) < 60) { this.drag = 's'; return true; } if (Math.hypot(x - tip[0], y - tip[1]) < 90) { this.drag = 'a'; this.user = aa; return true; } this.drag = 'a'; this.user = Math.atan2(O[1] - y, x - O[0]); return true; },
+  move(x, y) { const O = [920, 600]; const a = Math.atan2(O[1] - y, x - O[0]); if (this.drag === 's') this.phs = a; else if (this.drag === 'a') this.user = a; },
+  up() { this.drag = null; },
+});
+// 5 · reflection as vectors: keep the along-surface part, flip the normal part
+Step({
+  title: '反射公式', dur: 10, hint: '拖动入射光的起点',
+  beats: [
+    [0, R`现在用箭头描述反射。入射方向是 \(\dd\)，镜面的法线是 \(\nn\)（长度 1，垂直于镜面向上）。`],
+    [2, R`把 \(\dd\) 延长到镜面下面（虚线），再拆成两段：<b>贴着镜面</b>的一段，和<b>沿着法线</b>的一段。`],
+    [3.6, R`沿法线那段的长度就是影子 \(\dd\cdot\nn\)（这里是负数，因为 \(\dd\) 朝下），所以这一段是 \((\dd\cdot\nn)\,\nn\)。`],
+    [5, R`反射时，贴着镜面的一段<b>不变</b>，沿法线的一段<b>反向</b>。这正是"入射角 = 反射角"。`],
+    [7.6, R`写成公式：减掉两倍的法线段，就把它翻了过来：$$\rr=\dd-2(\dd\cdot\nn)\,\nn$$ 只要知道某点的法线，这个公式对任何形状的反光面都成立。`],
+  ],
+  enter() { this.al = 38 * DEG; this.drag = false; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const MY = 700, Hp = [960, MY], L = 330, s = Math.sin(this.al), co = Math.cos(this.al);
+    mirrorStrip(c, 300, 1620, MY);
+    const T0 = [Hp[0] - L * s, MY - L * co], g = eo(t / 1.4);
+    arrowT(c, ...T0, T0[0] + (Hp[0] - T0[0]) * g, T0[1] + (Hp[1] - T0[1]) * g, K.red, 8); vlab(c, 'd', T0[0] + L * s * .45 - 40, T0[1] + L * co * .45 - 10, K.red);
+    arrowT(c, ...Hp, Hp[0], MY - 220, K.gold, 7); vlab(c, 'n', Hp[0] + 36, MY - 200, K.gold);
+    const ga = smooth(2, 2.8, t), da = smooth(3.6, 4.4, t), fl = eio(inv(5, 7, t)), ra = smooth(7.6, 8.6, t);
+    if (ga > 0) { arrowT(c, ...Hp, Hp[0] + L * s, MY + L * co, K.red, 4, { dash: [10, 10], alpha: ga * .7, shadow: false }); }
+    if (da > 0) {
+      const A = [Hp[0] + L * s, MY]; arrowT(c, ...Hp, ...A, K.cream, 7, { alpha: da }); say(c, '贴面部分（不变）', Hp[0] + L * s / 2, MY - 34, { align: 'center', size: 28, alpha: da });
+      const ang = PI * fl, vy = L * co, ex = A[0] - vy * Math.sin(ang), ey = A[1] + vy * Math.cos(ang); // rotate the normal part about its base
+      arrowT(c, ...A, ex, ey, K.gold, 7, { alpha: da }); say(c, fl < .5 ? '法向部分 (d̂·n̂)n̂' : '法向部分反向', Math.max(A[0], ex) + 24, (A[1] + ey) / 2, { size: 28, col: K.gold, alpha: da });
+    }
+    if (ra > 0) { const R2 = [Hp[0] + L * s, MY - L * co]; arrowT(c, ...Hp, ...R2, K.blue, 8, { alpha: ra }); vlab(c, 'r', R2[0] + 30, R2[1] + 10, K.blue, { alpha: ra }); }
+    if (t > 5.6) { const al = smooth(5.6, 6.4, t); arcAngle(c, Hp[0], MY, 90, Math.atan2(T0[1] - MY, T0[0] - Hp[0]), -PI / 2, K.cream, 3); if (ra > 0) arcAngle(c, Hp[0], MY, 104, -PI / 2, Math.atan2(-co, s), K.cream, 3); }
+    say(c, `入射角 ${(this.al / DEG).toFixed(0)}°`, 80, 80, { font: ZH, size: 32 });
+    if (ra > .5) say(c, 'r̂ = d̂ − 2(d̂·n̂) n̂', 960, 960, { align: 'center', font: MATH, size: 48, col: K.glow });
+  },
+  down(x, y) { const L = 330, T0 = [960 - L * Math.sin(this.al), 700 - L * Math.cos(this.al)]; if (Math.hypot(x - T0[0], y - T0[1]) < 120 || y < 690) { this.drag = true; this.move(x, y); return true; } return false; },
+  move(x, y) { if (!this.drag) return; this.al = clamp(Math.atan2(960 - x, 700 - Math.min(y, 690)), 8 * DEG, 78 * DEG); },
+  up() { this.drag = false; },
+});
+// 6 · zoom into one scratch: a curved trench whose normals all lie in the cross-section
+Step({
+  title: '一道划痕是一条小沟', dur: 10, live: true, hint: '左右拖动，改变光的方向',
+  beats: [
+    [0, R`回到托盘。每一圈划痕放大看，是一条极细的<b>沟</b>。`],
+    [3.2, R`顺着沟的走向看进去（\(\ss\) 指向屏幕里面，图中 ⊗ 符号），这是沟的截面：沟底是弯的。`],
+    [5, R`所以沟上不同位置的法线 \(\nn\)（金色短线）朝向各不相同，平行光被反射成一整个扇面。`],
+    [7.6, R`但这些法线有一个共同点：它们都在这个截面里，<b>都垂直于沟的走向</b>：$$\nn\cdot\ss=0$$`],
+  ],
+  enter() { this.gam = -22 * DEG; this.drag = false; this.build(); },
+  build() {
+    const cx = 960, cy = 330, Rr = 330, S = 640, hw = Math.sqrt(Rr * Rr - (S - cy) ** 2); this.geo = { cx, cy, Rr, S, hw };
+    const p = [Math.sin(-this.gam), Math.cos(-this.gam)]; this.paths = []; this.hits = [];
+    const hit = (o, d) => { const ox = o[0] - cx, oy = o[1] - cy, b = ox * d[0] + oy * d[1], c2 = ox * ox + oy * oy - Rr * Rr, disc = b * b - c2; if (disc < 0) return null; const s = Math.sqrt(disc); for (const t of [-b - s, -b + s]) { if (t < 1e-3) continue; const q = [o[0] + t * d[0], o[1] + t * d[1]]; if (q[1] > S + .5) return { q, n: [(cx - q[0]) / Rr, (cy - q[1]) / Rr] }; } return null; };
+    for (let k = 0; k < 11; k++) { const x0 = cx - hw * .9 + hw * 1.8 * k / 10; let o = [x0 - p[0] * 900, S - p[1] * 900], d = p; const pts = [o]; for (let b = 0; b < 2; b++) { const h = hit(o, d); if (!h) break; pts.push(h.q); if (!b) this.hits.push(h); const k2 = 2 * (d[0] * h.n[0] + d[1] * h.n[1]); d = [d[0] - k2 * h.n[0], d[1] - k2 * h.n[1]]; o = h.q; } pts.push([o[0] + d[0] * 1000, o[1] + d[1] * 1000]); const Ls = [0]; for (let m = 1; m < pts.length; m++) Ls.push(Ls[m - 1] + Math.hypot(pts[m][0] - pts[m - 1][0], pts[m][1] - pts[m - 1][1])); this.paths.push({ pts, Ls }); }
+  },
+  at(P, s) { const { pts, Ls } = P; for (let m = 1; m < pts.length; m++) if (s <= Ls[m]) { const t = (s - Ls[m - 1]) / (Ls[m] - Ls[m - 1]); return [lerp(pts[m - 1][0], pts[m][0], t), lerp(pts[m - 1][1], pts[m][1], t)]; } return pts[pts.length - 1]; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0);
+    if (t < 3.2) { // top view with a magnifier growing on one groove
+      trayTop(c, .1, .05, 1.15); const z = eio(inv(.8, 3, t)), mx = tx(.72), my = ty(.52), r = lerp(40, 1400, z);
+      c.save(); c.beginPath(); c.arc(mx, my, r, 0, TAU); c.clip(); c.fillStyle = '#274f55'; c.fillRect(0, 0, W, H); c.restore();
+      c.save(); c.strokeStyle = K.cream; c.lineWidth = 6; c.beginPath(); c.arc(mx, my, r, 0, TAU); c.stroke(); c.restore();
+      if (z < .1) say(c, '放大一道划痕', mx + 60, my - 60, { size: 32 });
+      return;
+    }
+    const { cx, cy, Rr, S, hw } = this.geo, fade = smooth(3.2, 3.8, t);
+    c.globalAlpha = fade;
+    const slab = gg => { gg.beginPath(); gg.moveTo(0, S); gg.lineTo(cx - hw, S); gg.arc(cx, cy, Rr, Math.atan2(S - cy, -hw), Math.atan2(S - cy, hw), true); gg.lineTo(W, S); gg.lineTo(W, H); gg.lineTo(0, H); gg.closePath(); };
+    c.save(); c.shadowColor = 'rgba(6,20,24,.4)'; c.shadowOffsetY = -8; c.shadowBlur = 16; slab(c); c.fillStyle = '#8a9697'; c.fill(); c.restore();
+    withClip(c, slab, gg => { hatch(gg, 0, S, W, H - S, { gap: 3.4, col: '#3d4a4c', a: .3, wob: 1, seed: 62 }); const lg = gg.createLinearGradient(0, S, 0, H); lg.addColorStop(0, 'rgba(255,250,236,.15)'); lg.addColorStop(1, 'rgba(6,20,24,.4)'); gg.fillStyle = lg; gg.fillRect(0, S, W, H - S); });
+    c.save(); c.strokeStyle = 'rgba(245,242,230,.85)'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, S); c.lineTo(cx - hw, S); c.arc(cx, cy, Rr, Math.atan2(S - cy, -hw), Math.atan2(S - cy, hw), true); c.lineTo(W, S); c.stroke(); c.restore();
+    const ra = smooth(4, 5, t); this.paths.forEach((P, k) => poly(c, P.pts, K.red, 2.6, { alpha: .25 + .6 * ra }));
+    const na = smooth(5, 5.8, t), hi = smooth(7.6, 8.4, t);
+    for (const h of this.hits) { const [x, y] = h.q; line(c, x, y, x + h.n[0] * 70, y + h.n[1] * 70, K.gold, 4 + hi * 2, null, na); }
+    const tt = performance.now() / 1000; this.paths.forEach((P, k) => { const L = P.Ls[P.Ls.length - 1], s = ((tt * 700 + k * 233) % (L + 300)) - 150; if (s > 0 && s < L) { const [x, y] = this.at(P, s); bead(c, x, y, 7); } });
+    const gx = cx, gy = S + 150; c.save(); c.strokeStyle = K.green; c.lineWidth = 5; c.beginPath(); c.arc(gx, gy, 30, 0, TAU); c.moveTo(gx - 20, gy - 20); c.lineTo(gx + 20, gy + 20); c.moveTo(gx + 20, gy - 20); c.lineTo(gx - 20, gy + 20); c.stroke(); c.restore();
+    vlab(c, 's', gx + 70, gy + 18, K.green); say(c, '指向屏幕里面', gx + 110, gy + 4, { size: 28, col: K.green });
+    say(c, '沟的截面', 120, S + 80, { size: 32 });
+    if (hi > 0) say(c, '每条金色法线都在截面里  ⇒  n̂ · ŝ = 0', 960, 110, { align: 'center', font: ZHS, weight: 600, size: 44, col: K.glow, alpha: hi });
+    c.globalAlpha = 1;
+  },
+  down(x) { this.drag = true; this.lx = x; return true; },
+  move(x) { if (!this.drag) return; this.gam = clamp(this.gam + (x - this.lx) * .0015, -45 * DEG, 45 * DEG); this.lx = x; this.build(); },
+  up() { this.drag = false; },
+});
+// 7 · the reflection cone: shadows along the groove are equal
+Step({
+  title: '一道划痕只亮在一个圆锥上', dur: 11, live: true, hint: '上下拖动，改变入射光和沟的夹角',
+  beats: [
+    [0, R`把第 5 步的反射公式两边都和 \(\ss\) 做点积，也就是量它们在沟方向上的影子：$$\rr\cdot\ss=\dd\cdot\ss-2(\dd\cdot\nn)(\nn\cdot\ss)$$`],
+    [3, R`第 6 步说 \(\nn\cdot\ss=0\)，后一项消失：$$\rr\cdot\ss=\dd\cdot\ss$$ <b>反射前后，沿沟方向的影子一样长。</b>`],
+    [5.5, R`满足这个条件的出射方向不止一个，而是排成一整圈，组成一个以沟为轴的<b>圆锥</b>。两颗白珠标出两个影子的终点：它们离顶点一样远。`],
+    [8.5, R`眼睛落在这个圆锥上，才看得见这道划痕发亮。所以<b>亮的条件</b>是：$$\dd\cdot\ss=\rr\cdot\ss$$`],
+  ],
+  enter() { this.beta = 50 * DEG; this.drag = false; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0);
+    const b = this.beta, cb = Math.cos(b), sb = Math.sin(b), L = 1.35, yaw = -30 * DEG, pitch = 22 * DEG, SC = 360, O = [960, 600];
+    const pr = p => { const x = p[0] * Math.cos(yaw) - p[1] * Math.sin(yaw), y1 = p[0] * Math.sin(yaw) + p[1] * Math.cos(yaw); return [O[0] + x * SC, O[1] - (p[2] * Math.cos(pitch) - y1 * Math.sin(pitch)) * SC]; };
+    const r = ph => [cb, sb * Math.cos(ph), sb * Math.sin(ph)], tip = ph => pr(r(ph).map(v => v * L));
+    const q = [pr([-2.4, -1.2, 0]), pr([2.4, -1.2, 0]), pr([2.4, 1.2, 0]), pr([-2.4, 1.2, 0])];
+    c.save(); c.shadowColor = 'rgba(6,20,24,.4)'; c.shadowOffsetY = 14; c.shadowBlur = 20; cutPath(c, q, { amp: 1, step: 30, seed: 71 }); c.fillStyle = '#7d898a'; c.fill(); c.restore();
+    withClip(c, gg => cutPath(gg, q, { amp: 1, step: 30, seed: 71 }), gg => hatch(gg, 0, 300, W, 600, { gap: 3.4, ang: -.26, col: '#3d4a4c', a: .25, seed: 72 }));
+    const a0 = pr([-2.4, 0, 0]), a1 = pr([2.4, 0, 0]), ap = pr([0, 0, 0]);
+    line(c, ...a0, ...a1, '#2b3336', 16); line(c, a0[0], a0[1] - 6, a1[0], a1[1] - 6, 'rgba(240,240,230,.7)', 3);
+    arrowT(c, ...pr([1.5, 0, 0]), ...pr([2.25, 0, 0]), K.green, 7); vlab(c, 's', pr([2.1, 0, 0])[0], pr([2.1, 0, 0])[1] + 60, K.green);
+    const ca = smooth(3, 5.5, t), kmax = Math.round(12 * ca);
+    if (ca > 0) { c.fillStyle = `rgba(236,228,206,${.14 * ca})`; c.beginPath(); c.moveTo(...ap); for (let k = 0; k <= 48; k++) c.lineTo(...tip(k * PI / 48)); c.closePath(); c.fill();
+      for (let k = 0; k <= kmax; k++) poly(c, [ap, tip(k * PI / 12)], K.blue, 2, { alpha: .55, shadow: false }); const rim = []; for (let k = 0; k <= 64 * ca; k++) rim.push(tip(k * PI / 64)); poly(c, rim, K.cream, 2.4, { alpha: .75 }); }
+    const inc = pr([-L * cb, 0, L * sb]); arrowT(c, ...inc, ...ap, K.red, 7); vlab(c, 'd', (inc[0] + ap[0]) / 2 - 40, (inc[1] + ap[1]) / 2, K.red);
+    if (t > 1) { const ph = PI / 2 + (PI / 2 - .2) * Math.sin(performance.now() / 1000 * 1.6), tp = tip(ph); arrowT(c, ...ap, ...tp, K.blue, 7); vlab(c, 'r', tp[0] + 32, tp[1], K.blue);
+      const sa = smooth(5.5, 6.5, t); if (sa > 0) { const fa = pr([L * cb, 0, 0]), fi = pr([-L * cb, 0, 0]); line(c, ...tp, ...fa, K.cream, 2.4, [6, 6], sa); line(c, ...inc, ...fi, K.cream, 2.4, [6, 6], sa); c.globalAlpha = sa; bead(c, ...fa, 9); bead(c, ...fi, 9); c.globalAlpha = 1;
+        say(c, 'r̂·ŝ', (fa[0] + ap[0]) / 2, (fa[1] + ap[1]) / 2 + 44, { font: MATH, size: 34, col: K.blue, align: 'center', alpha: sa }); say(c, 'd̂·ŝ', (fi[0] + ap[0]) / 2, (fi[1] + ap[1]) / 2 + 44, { font: MATH, size: 34, col: K.red, align: 'center', alpha: sa }); } }
+    if (t > 8.5) { const tp = tip(1.15); put(c, art('eye'), tp[0] + 60, tp[1] - 30, -.25, 1, { alpha: smooth(8.5, 9.2, t) }); say(c, '眼睛在锥面上：看得见', tp[0] + 130, tp[1] - 90, { size: 30, alpha: smooth(8.5, 9.2, t) }); }
+    say(c, `入射光与沟的夹角 β = ${(b / DEG).toFixed(0)}°`, 80, 80, { size: 32 });
+    if (t > 3) say(c, 'r̂ · ŝ = d̂ · ŝ', 960, 990, { align: 'center', font: MATH, size: 50, col: K.glow, alpha: smooth(3, 3.8, t) });
+  },
+  down(x, y) { this.drag = true; this.ly = y; return true; },
+  move(x, y) { if (!this.drag) return; this.beta = clamp(this.beta + (y - this.ly) * .003, 18 * DEG, 78 * DEG); this.ly = y; },
+  up() { this.drag = false; },
+});
+// 8 · concentric grooves: the groove direction at Q is CQ turned by 90°
+Step({
+  title: '同心圆：每一点的沟朝哪', dur: 10, hint: '拖动 C 或 Q',
+  beats: [
+    [0, R`回到俯视的托盘，用坐标描述位置。设圆心 \(C=(u,\,v)\)，盘上任意一点 \(Q=(x,\,y)\)。`],
+    [3, R`从 C 指向 Q 的箭头是 \((x-u,\;y-v)\)。`],
+    [5, R`Q 所在的那一圈沟，走向沿着圆的<b>切线</b>。切线和半径 CQ 互相垂直。`],
+    [7.5, R`把箭头 \((a,\,b)\) 转 90° 得到 \((b,\,-a)\)，所以沟的方向是 $$\sv=(y-v,\;u-x,\;0)$$ 最后的 0 表示沟平躺在盘面上。验证垂直：\((x-u)(y-v)+(y-v)(u-x)=0\)。`],
+  ],
+  enter() { this.C = [.3, .2]; this.Q = [-.4, -.35]; this.drag = null; },
+  draw(c, t) {
+    c.drawImage(art('grid'), 0, 0); const [u, v] = this.C, [x, y] = this.Q, rho = Math.hypot(x - u, y - v), g = eo(t / 2.4);
+    c.save(); c.globalAlpha = .9; trayTop(c, u, v, 1.15 * g + .01); c.restore();
+    c.save(); c.strokeStyle = 'rgba(231,222,200,.18)'; c.lineWidth = 1.5; for (let r = .15; r < 1.15 * g; r += .15) { c.beginPath(); c.arc(tx(u), ty(v), r * TV.s, 0, TAU); c.stroke(); } c.restore();
+    c.save(); c.strokeStyle = 'rgba(231,222,200,.75)'; c.lineWidth = 3; c.beginPath(); c.arc(tx(u), ty(v), rho * TV.s, 0, TAU * Math.min(1, g * 1.2)); c.stroke(); c.restore();
+    const ca = smooth(3, 3.8, t), ra = eio(inv(5, 7.2, t));
+    if (ca > 0) { arrowT(c, tx(u), ty(v), tx(x), ty(y), K.cream, 6, { alpha: ca }); say(c, '(x−u, y−v)', (tx(u) + tx(x)) / 2 - 20, (ty(v) + ty(y)) / 2 + 40, { font: MATH, size: 32, align: 'right', alpha: ca }); }
+    if (ra > 0) { const dx = (x - u) / rho, dy = (y - v) / rho, ang = -PI / 2 * ra, ex = dx * Math.cos(ang) - dy * Math.sin(ang), ey = dx * Math.sin(ang) + dy * Math.cos(ang), Ls = .45;
+      arrowT(c, tx(x), ty(y), tx(x + ex * Ls), ty(y + ey * Ls), K.green, 7); if (ra > .98) { rightMark(c, tx(x), ty(y), -dx, dy, ex, -ey, 22); vlab(c, 's', tx(x + ex * Ls) + 30, ty(y + ey * Ls) + 20, K.green, { hat: false, vec: true }); line(c, tx(x - ex * .8), ty(y - ey * .8), tx(x + ex * .8), ty(y + ey * .8), K.green, 2, [6, 8], .7); } }
+    tagAt(c, tx(u), ty(v), 'C', 81, g > .5 ? 1 : 0, 1); tagAt(c, tx(x), ty(y), 'Q', 82, g > .7 ? 1 : 0, -1);
+    say(c, `C = (u, v) = (${u.toFixed(2)}, ${v.toFixed(2)})     Q = (x, y) = (${x.toFixed(2)}, ${y.toFixed(2)})`, 80, 80, { font: MATH, size: 32 });
+    if (t > 7.5) say(c, `s = (y−v, u−x, 0) = (${(y - v).toFixed(2)}, ${(u - x).toFixed(2)}, 0)`, 80, 130, { font: MATH, size: 32, col: K.green, alpha: smooth(7.5, 8.2, t) });
+  },
+  down(x, y) { const [u, v] = this.C, [qx, qy] = this.Q; if (Math.hypot(x - tx(qx), y - ty(qy)) < 70) { this.drag = 'Q'; return true; } if (Math.hypot(x - tx(u), y - ty(v)) < 70) { this.drag = 'C'; return true; } return false; },
+  move(x, y) { if (!this.drag) return; const p = [clamp(itx(x), -1.3, 1.5), clamp(ity(y), -1.2, 1.25)]; if (this.drag === 'Q') { if (Math.hypot(p[0] - this.C[0], p[1] - this.C[1]) > .06) this.Q = p; } else this.C = p; },
+  up() { this.drag = null; },
+});
+// 9 · the probe: compare the two shadows on ŝ at Q; walk a ring to find the bright points; then all of them
+const PRB = { u: .32, v: .22, R: 1.15, i: 35 * DEG, h: 4 };
+Step({
+  title: '亮点的条件：两个影子对齐', dur: 13, hint: '拖动 Q',
+  beats: [
+    [0, R`每个点 Q 都要检查同一个条件：\(\dd\) 和 \(\rr\) 在沟方向上的影子是否一样长。`],
+    [1.8, R`因为 \(\ss\) 平躺在盘面上，只需要看两者<b>贴在盘面上的影子</b>：红色是 \(\dd\) 的，蓝色是 \(\rr\) 的。再把它们投到 \(\ss\) 这条绿线上，<b>两个落点对齐，Q 就亮</b>。`],
+    [4.2, R`沿同一圈划痕走一遍：只有两个位置满足条件。`],
+    [8.6, R`每一圈都有这样的点，连起来就是那条<b>亮线</b>。`],
+    [10.5, R`为什么 O 和 C 一定在线上？在 O，\(\rr\) 正好是 \(\dd\) 的镜像，两者只差上下分量，在任何水平方向上的影子都相等；在 C，\(\sv\) 缩成 0，条件自动成立。`],
+  ],
+  controls: `<div class="row"><button type="button" data-k="seek">沿 Q 这一圈找亮点</button><button type="button" data-k="all" aria-pressed="false">显示全部亮点</button></div>`,
+  bind(root) { root.querySelector('[data-k=seek]').onclick = () => { if (this.Q) { this.Q0 = this.Q; this.Q = null; } this.path = this.findPath(); setT(1.9, true); }; const b = root.querySelector('[data-k=all]'); b.onclick = () => { this.all = !this.all; b.setAttribute('aria-pressed', this.all); dirty = true; }; },
+  enter() { this.Q0 = [-.62, -.34]; this.Q = null; this.all = false; this.drag = false; this.path = this.findPath(); const { u, v, h, i } = PRB; this.segs = contour((x, y) => Fp(x, y, u, v, h, Math.sin(i), Math.tan(i)), ...VIEW, 150, 84); },
+  findPath() { const { u, v, h, i } = PRB, sI = Math.sin(i), tI = Math.tan(i), rho = Math.max(.05, Math.hypot(this.Q0[0] - u, this.Q0[1] - v)), th0 = Math.atan2(this.Q0[1] - v, this.Q0[0] - u);
+    const f = th => { const [a, b] = terms(u + rho * Math.cos(th), v + rho * Math.sin(th), u, v, h, sI, tI); return a - b; }; const roots = []; let pv = f(th0);
+    for (let k = 1; k <= 720; k++) { const th = th0 + k * TAU / 720, cv = f(th); if ((pv > 0) !== (cv > 0)) { let lo = th - TAU / 720, hi = th, fl = pv; for (let m = 0; m < 40; m++) { const mid = (lo + hi) / 2, fm = f(mid); if ((fm > 0) === (fl > 0)) { lo = mid; fl = fm; } else hi = mid; } roots.push((lo + hi) / 2); } pv = cv; }
+    return { th0, rho, r1: roots[0] ?? th0, r2: roots[1] ?? roots[0] ?? th0 }; },
+  qAt(t) { if (this.Q) return this.Q; const { u, v } = PRB, p = this.path; let th = p.th0; if (t > 2 && t <= 5) th = lerp(p.th0, p.r1, eio((t - 2) / 3)); else if (t > 5 && t <= 5.8) th = p.r1; else if (t > 5.8 && t <= 8.3) th = lerp(p.r1, p.r2, eio((t - 5.8) / 2.5)); else if (t > 8.3) th = p.r2; return [u + p.rho * Math.cos(th), v + p.rho * Math.sin(th)]; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const { u, v, R, h, i } = PRB, sI = Math.sin(i), tI = Math.tan(i);
+    trayTop(c, u, v, R); c.save(); c.strokeStyle = 'rgba(231,222,200,.13)'; c.lineWidth = 1.2; for (let r = .1; r < R; r += .1) { c.beginPath(); c.arc(tx(u), ty(v), r * TV.s, 0, TAU); c.stroke(); } c.restore();
+    const la = this.all ? 1 : smooth(8.6, 10, t); if (la > 0) { segDraw(c, this.segs, K.glow, 5, { alpha: la, glow: 18, clip: [u, v, R] }); segDraw(c, this.segs, K.glow, 2, { alpha: la * .35, dash: [4, 10] }); }
+    const [qx, qy] = this.qAt(t), rho = Math.hypot(qx - u, qy - v); c.save(); c.strokeStyle = 'rgba(231,222,200,.6)'; c.lineWidth = 2.5; c.beginPath(); c.arc(tx(u), ty(v), rho * TV.s, 0, TAU); c.stroke(); c.restore();
+    const [ds, rs, sx, sy] = terms(qx, qy, u, v, h, sI, tI), ex = -qx, ey = -h * tI - qy, en = Math.hypot(ex, ey, h), rh = [ex / en, ey / en], dh = [0, -sI], Ls = 1.05, X = tx(qx), Y = ty(qy), S = TV.s, lit = Math.abs(ds - rs) < .008;
+    if (lit) { const g = c.createRadialGradient(X, Y, 0, X, Y, 60); g.addColorStop(0, 'rgba(255,236,190,.95)'); g.addColorStop(1, 'rgba(255,200,120,0)'); c.fillStyle = g; c.beginPath(); c.arc(X, Y, 60, 0, TAU); c.fill(); }
+    line(c, X - sx * 1.2 * S, Y + sy * 1.2 * S, X + sx * 1.2 * S, Y - sy * 1.2 * S, K.green, 3, null, .8);
+    const tip = w => [X + w[0] * Ls * S, Y - w[1] * Ls * S], foot = w => { const k = w[0] * sx + w[1] * sy; return [X + sx * k * Ls * S, Y - sy * k * Ls * S]; };
+    const ta = smooth(1.8, 2.4, t) || (this.Q ? 1 : 0);
+    const td = tip(dh), tr = tip(rh), fd = foot(dh), fr = foot(rh);
+    arrowT(c, X, Y, ...td, K.red, 6); arrowT(c, X, Y, ...tr, K.blue, 6);
+    if (ta > 0) { line(c, ...td, ...fd, K.red, 2.5, [6, 6], ta); line(c, ...tr, ...fr, K.blue, 2.5, [6, 6], ta); const nx = -sy, ny = -sx; c.globalAlpha = ta; for (const [F, col] of [[fd, K.red], [fr, K.blue]]) line(c, F[0] - nx * 16, F[1] - ny * 16, F[0] + nx * 16, F[1] + ny * 16, col, 6); c.globalAlpha = 1; }
+    vlab(c, 'd', td[0] + 26, td[1] + 18, K.red, { size: 44 }); vlab(c, 'r', tr[0] - 30, tr[1] + 20, K.blue, { size: 44 });
+    tagAt(c, X, Y, 'Q', 91, 1, -1);
+    const ca = this.all ? 1 : smooth(10.5, 11.2, t); tagAt(c, tx(u), ty(v), 'C', 92, ca, 1); tagAt(c, tx(0), ty(0), 'O', 93, ca, -1);
+    say(c, `d̂·ŝ = ${ds.toFixed(3)}     r̂·ŝ = ${rs.toFixed(3)}`, 80, 80, { font: MATH, size: 34 });
+    say(c, lit ? '两个落点对齐 → 亮' : '没对齐 → 暗', 80, 132, { size: 34, col: lit ? K.glow : K.dim, weight: 700 });
+    say(c, '光从这一侧射来 ↓', 960, 40, { align: 'center', size: 26, col: K.dim }); say(c, '眼睛在这一侧的上方', 960, 1045, { align: 'center', size: 26, col: K.dim });
+  },
+  down(x, y) { this.drag = true; this.move(x, y); return true; },
+  move(x, y) { if (!this.drag) return; this.Q = [clamp(itx(x), -1.3, 1.5), clamp(ity(y), -1.25, 1.3)]; },
+  up() { this.drag = false; },
+});
+// 10 · coordinates: d̂, E and r̂ in the side view; the groove equation
+Step({
+  title: '把条件写成方程', dur: 12.5, hint: '拖动 Q（沿盘面左右）',
+  beats: [
+    [0, R`现在把条件写成算式。光是平行光，从 +y 那一侧斜着射下来，和竖直方向夹角为 \(i\)。它的方向是 $$\dd=(0,\;-\sin i,\;-\cos i)$$`],
+    [3, R`眼睛 \(E\) 放在 O 的反射光线上，高度为 \(h\)。看图中的直角三角形：竖边是 \(h\)，横边是 \(h\tan i\)，所以 $$E=(0,\;-h\tan i,\;h)$$`],
+    [6, R`从盘上一点 \(Q=(x,y,0)\) 看向眼睛的方向，就是"从 Q 指向 E 的箭头"缩成长度 1：$$\rr=\frac{E-Q}{|E-Q|}=\frac{(-x,\;-h\tan i-y,\;h)}{\sqrt{x^2+(y+h\tan i)^2+h^2}}$$`],
+    [8.5, R`用第 4 步的分量公式算两个影子，这里用 \(\sv=(y-v,\,u-x,\,0)\)（不必缩成长度 1，两边同乘一个数，等式不变）：$$\dd\cdot\sv=-\sin i\,(u-x)=(x-u)\sin i$$ $$\rr\cdot\sv=\frac{-x(y-v)+(y+h\tan i)(x-u)}{\sqrt{\cdots}}=\frac{(xv-yu)+h\tan i\,(x-u)}{\sqrt{\cdots}}$$`],
+    [10.8, R`令两者相等，就是视频里的<b>沟槽方程</b>：$$\frac{(xv-yu)+h\tan i\,(x-u)}{\sqrt{x^2+h^2+(y+h\tan i)^2}}=(x-u)\sin i$$ 盘上满足它的点，就是亮线。`],
+  ],
+  enter() { this.qy = .9; this.drag = false; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const i = 35 * DEG, h = 2.05, sI = Math.sin(i), cI = Math.cos(i), tI = Math.tan(i), X = y => 1180 + y * 300, Y = z => 850 - z * 300, Ey = -h * tI;
+    mirrorStrip(c, X(-2.2), X(2.2), Y(0)); say(c, '盘面（侧视）', X(2.15), Y(0) + 70, { align: 'right', size: 26, col: K.dim });
+    const G = [140, 960]; arrowT(c, ...G, G[0] + 110, G[1], K.cream, 3, { shadow: false }); arrowT(c, ...G, G[0], G[1] - 110, K.cream, 3, { shadow: false }); say(c, 'y', G[0] + 124, G[1], { font: MATH, size: 30 }); say(c, 'z', G[0] + 10, G[1] - 128, { font: MATH, size: 30 }); c.save(); c.strokeStyle = K.cream; c.lineWidth = 3; c.beginPath(); c.arc(G[0], G[1], 11, 0, TAU); c.stroke(); c.fillStyle = K.cream; c.beginPath(); c.arc(G[0], G[1], 3.5, 0, TAU); c.fill(); c.restore(); say(c, 'x 朝外', G[0] - 20, G[1] + 36, { size: 22 });
+    const ra = smooth(0, 1, t); for (const y0 of [-.8, -.4, 0, .4, .8]) { const L0 = 2.4, s = [X(y0 + sI * L0), Y(cI * L0)], e = [X(y0), Y(0)]; arrowT(c, ...s, lerp(s[0], e[0], ra), lerp(s[1], e[1], ra), y0 === 0 ? K.red : 'rgba(240,122,95,.45)', y0 === 0 ? 7 : 4); }
+    line(c, X(0), Y(0), X(0), Y(1.4), K.gold, 3, [10, 10]); arcAngle(c, X(0), Y(0), 110, -PI / 2, -PI / 2 + i, K.cream, 3); say(c, 'i', X(0) + 44, Y(0) - 130, { font: MATH, size: 38 });
+    vlab(c, 'd', X(sI * 1.25) + 44, Y(cI * 1.25), K.red); if (t > .6) say(c, '= (0, −sin i, −cos i)', X(sI * 1.25) + 80, Y(cI * 1.25) - 12, { font: MATH, size: 32, col: K.red, alpha: smooth(.6, 1.4, t) });
+    const ea = smooth(3, 4, t);
+    if (ea > 0) { arrowT(c, X(0), Y(0), X(Ey) + 30, Y(h) + 22, K.gold, 5, { alpha: ea }); arcAngle(c, X(0), Y(0), 128, -PI / 2 - i, -PI / 2, K.cream, 3); say(c, 'i', X(0) - 56, Y(0) - 146, { font: MATH, size: 38, alpha: ea });
+      line(c, X(Ey), Y(0), X(Ey), Y(h), K.cream, 2.5, [8, 8], ea); line(c, X(Ey), Y(0), X(0), Y(0), K.cream, 5, null, ea * .9);
+      say(c, 'h', X(Ey) - 30, Y(h / 2), { font: MATH, size: 40, align: 'right', alpha: ea }); say(c, 'h tan i', X(Ey / 2), Y(0) + 46, { font: MATH, size: 34, align: 'center', alpha: ea });
+      put(c, art('eye'), X(Ey), Y(h), -.6, 1, { alpha: ea }); say(c, 'E = (0, −h tan i, h)', X(Ey) + 80, Y(h) - 50, { font: MATH, size: 34, alpha: ea }); }
+    const qa = smooth(6, 7, t);
+    if (qa > 0) { const qx = X(this.qy); bead(c, qx, Y(0), 11, K.cream); say(c, 'Q', qx, Y(0) + 50, { font: MATH, size: 36, align: 'center', alpha: qa });
+      const dx = X(Ey) - qx, dy = Y(h) - Y(0), n = Math.hypot(dx, dy); line(c, qx, Y(0), X(Ey), Y(h), K.blue, 2, [6, 10], qa * .6); arrowT(c, qx, Y(0), qx + dx / n * 300, Y(0) + dy / n * 300, K.blue, 7, { alpha: qa }); vlab(c, 'r', qx + dx / n * 300 + 36, Y(0) + dy / n * 300 + 30, K.blue, { alpha: qa });
+      say(c, 'r̂ = (E − Q) / |E − Q|', qx + 40, Y(0) - 260, { font: MATH, size: 34, col: K.blue, alpha: qa }); }
+    if (t > 10.8) say(c, '亮 ⇔ d̂·s = r̂·s', 960, 90, { align: 'center', font: MATH, size: 50, col: K.glow, alpha: smooth(10.8, 11.6, t) });
+  },
+  down(x, y) { if (y > 700 && y < 950) { this.drag = true; this.move(x, y); return true; } return false; },
+  move(x) { if (!this.drag) return; this.qy = clamp((x - 1180) / 300, -1.9, 2); },
+  up() { this.drag = false; },
+});
+// 11 · squaring adds a false branch
+const SQ = { u: .32, v: .22, R: 1.15 };
+Step({
+  title: '平方带来的"假分支"', dur: 10, hint: '拖动圆心 C',
+  beats: [
+    [0, R`方程左边有根号。去掉根号的常规做法是两边平方，展开后得到一条 x、y 的四次曲线。`],
+    [2.5, R`但平方有个副作用：\(A=B\) 和 \(A=-B\) 平方后都变成 \(A^2=B^2\)。于是 \(\dd\cdot\sv=-\rr\cdot\sv\) 也混了进来。`],
+    [5, R`\(\dd\cdot\sv=-\rr\cdot\sv\) 的意思是"反射后沿沟方向的影子反号"，这违反第 7 步的结论，现实中不会发生。它是<b>假分支</b>（紫色虚线）；真正会亮的只有金色那支。`],
+    [7.5, R`拖动下方的 h：眼睛越高，假分支越贴近竖线 \(x=u\)，偏离量约为 $$x-u\approx-\frac{u\,(v-y)}{2h\tan i}$$`],
+  ],
+  controls: `<div class="ctl"><label for="c11h">眼睛高度 h（盘半径为 1.15） <output id="c11ho"></output></label><input id="c11h" type="range" min="0" max="1000" value="120"></div><div class="ctl"><label for="c11i">入射角 i <output id="c11io"></output></label><input id="c11i" type="range" min="15" max="70" value="35"></div>`,
+  bind(root) { const h = root.querySelector('#c11h'), ho = root.querySelector('#c11ho'), ii = root.querySelector('#c11i'), io = root.querySelector('#c11io'); const f = () => { this.hU = 1.2 * Math.pow(50, +h.value / 1000); this.iU = +ii.value * DEG; ho.textContent = this.hU.toFixed(1); io.textContent = ii.value + '°'; this.key = ''; touch(); }; h.oninput = f; ii.oninput = f; ho.textContent = '—'; io.textContent = ii.value + '°'; this.syncUI = () => { if (this.hU == null) ho.textContent = this.hNow.toFixed(1); }; },
+  enter() { this.hU = null; this.iU = null; this.key = ''; this.drag = false; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const { u, v, R } = SQ, i = this.iU ?? 35 * DEG, h = this.hNow = this.hU ?? 1.4 * Math.pow(30 / 1.4, eio(inv(5.5, 9.5, t))), sI = Math.sin(i), tI = Math.tan(i);
+    trayTop(c, u, v, R); const key = [u, v, h, i].join();
+    if (this.key !== key) { this.key = key; this.tr = contour((x, y) => Fp(x, y, u, v, h, sI, tI, 1), ...VIEW, 150, 84); this.sp = contour((x, y) => Fp(x, y, u, v, h, sI, tI, -1), ...VIEW, 150, 84); }
+    const sa = smooth(2.5, 4, t) || (this.hU != null ? 1 : 0);
+    if (t > 7.5 || this.hU != null) line(c, tx(u), 0, tx(u), H, K.violet, 2.5, [2, 9], .7);
+    if (sa > 0) segDraw(c, this.sp, K.violet, 4, { dash: [12, 10], alpha: sa });
+    segDraw(c, this.tr, K.glow, 5, { glow: 14 });
+    tagAt(c, tx(u), ty(v), 'C', 111, 1, 1); tagAt(c, tx(0), ty(0), 'O', 112, 1, -1);
+    say(c, `h = ${h.toFixed(1)}`, 80, 80, { font: MATH, size: 36 });
+    if (sa > 0) { say(c, '金色：真分支  d̂·s = r̂·s', 80, 134, { size: 30, col: K.glow }); say(c, '紫色虚线：假分支  d̂·s = −r̂·s', 80, 180, { size: 30, col: K.violet, alpha: sa }); }
+    if (t > 7.5 || this.hU != null) say(c, 'x = u', tx(u) + 14, 1030, { font: MATH, size: 30, col: K.violet });
+    this.syncUI && this.syncUI();
+  },
+  down(x, y) { const { u, v } = SQ; if (Math.hypot(x - tx(u), y - ty(v)) < 80) { this.drag = true; return true; } return false; },
+  move(x, y) { if (!this.drag) return; SQ.u = clamp(itx(x), -.9, .9); SQ.v = clamp(ity(y), -.8, .8); },
+  up() { this.drag = false; },
+});
+// 12 · eye far away: the leading term vanishes identically → the hyperbola
+Step({
+  title: '眼睛很远时：只剩一条双曲线', dur: 13, hint: '用下方滑块调 h',
+  beats: [
+    [0, R`眼睛越高，从盘上各点看眼睛的方向越接近同一个方向 \(\hat r_0=(0,\,-\sin i,\,\cos i)\)，也就是 O 点的反射方向。`],
+    [2.8, R`\(\hat r_0\) 和 \(\dd\) 只差上下（z）分量，而 \(\sv\) 没有 z 分量，所以 $$\dd\cdot\sv-\hat r_0\cdot\sv=(0,\,0,\,-2\cos i)\cdot(s_x,\,s_y,\,0)=0$$ 这一部分对每个点都自动成立，不提供任何限制。`],
+    [5.5, R`体现在方程里：平方后两边最大的 \(h^2\) 项完全相同（都是 \((x-u)^2\tan^2 i\)），互相抵消，只剩 h 的一次项：$$h=\frac{(x-u)^2\sin^2 i\,(x^2+y^2)-(xv-yu)^2}{2(x-u)\tan i\,\big[(xv-yu)-(x-u)\,y\sin^2 i\big]}$$`],
+    [8.5, R`h 趋于无穷时，右边的分母必须趋于 0。分母有两个因子：\(x-u=0\) 是假分支的去处；另一个就是真正的亮线：$$xy-\frac{v}{\sin^2 i}\,x+\frac{u}{\tan^2 i}\,y=0$$ 这是一条<b>双曲线</b>（红色虚线），金色曲线正在向它靠拢。`],
+  ],
+  controls: `<div class="ctl"><label for="c12h">眼睛高度 h <output id="c12ho"></output></label><input id="c12h" type="range" min="0" max="1000" value="0"></div>`,
+  bind(root) { const h = root.querySelector('#c12h'), ho = root.querySelector('#c12ho'); h.oninput = () => { this.hU = 2 * Math.pow(500, +h.value / 1000); touch(); }; this.syncUI = () => { ho.textContent = this.hNow.toFixed(1); if (this.hU == null) h.value = Math.round(Math.log(this.hNow / 2) / Math.log(500) * 1000); }; },
+  enter() { this.hU = null; this.key = ''; },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const i = 35 * DEG, sI = Math.sin(i), cI = Math.cos(i), tI = Math.tan(i), u = .32, v = .22, R = 1.15;
+    if (t < 5.5 && this.hU == null) { // side view: rays to the eye straighten out
+      const h = this.hNow = 1.2 * Math.pow(40, eio(inv(.4, 5, t))), X = y => 1180 + y * 300, Y = z => 820 - z * 300, Ey = -h * tI;
+      mirrorStrip(c, X(-2.2), X(2.2), Y(0));
+      for (let k = 0; k <= 8; k++) { const y = -.9 + 1.8 * k / 8, dy = Ey - y, n = Math.hypot(dy, h), L = 1.5; line(c, X(y), Y(0), X(y - sI * L), Y(cI * L), 'rgba(231,222,200,.55)', 2.5, [6, 8]); arrowT(c, X(y), Y(0), X(y + dy / n * L), Y(h / n * L), K.blue, 5); bead(c, X(y), Y(0), 7); }
+      say(c, `h = ${h.toFixed(1)}`, 80, 80, { font: MATH, size: 36 }); say(c, '蓝：各点看向眼睛的方向     虚线：r̂₀（眼睛无限远）', 80, 134, { size: 30 });
+      if (t > 2.8) say(c, 'd̂ 和 r̂₀ 只差上下分量 → 对水平的 s 影子相同', 960, 1000, { align: 'center', size: 34, font: ZHS, weight: 600, col: K.glow, alpha: smooth(2.8, 3.6, t) });
+      this.syncUI && this.syncUI(); return;
+    }
+    const h = this.hNow = this.hU ?? 3 * Math.pow(1000 / 3, eio(inv(6.2, 11.5, t))), key = h.toFixed(3);
+    trayTop(c, u, v, R);
+    if (this.key !== key) { this.key = key; this.tr = contour((x, y) => Fp(x, y, u, v, h, sI, tI, 1), ...VIEW, 150, 84); if (!this.hy) this.hy = contour((x, y) => Hs(x, y, u, v, sI * sI, cI * cI), ...VIEW, 150, 84); }
+    const ha = smooth(8.5, 9.3, t) || (this.hU != null ? 1 : 0);
+    if (ha > 0) segDraw(c, this.hy, K.hyp, 3.5, { dash: [14, 10], alpha: ha });
+    segDraw(c, this.tr, K.glow, 5, { glow: 14 });
+    tagAt(c, tx(u), ty(v), 'C', 121, 1, 1); tagAt(c, tx(0), ty(0), 'O', 122, 1, -1);
+    const Kx = -u / (tI * tI), Ky = v / (sI * sI); if (ha > 0) { c.save(); c.globalAlpha = ha; c.strokeStyle = K.hyp; c.lineWidth = 4; c.beginPath(); c.moveTo(tx(Kx) - 12, ty(Ky) - 12); c.lineTo(tx(Kx) + 12, ty(Ky) + 12); c.moveTo(tx(Kx) - 12, ty(Ky) + 12); c.lineTo(tx(Kx) + 12, ty(Ky) - 12); c.stroke(); c.restore(); say(c, 'K（双曲线中心）', tx(Kx) + 20, ty(Ky) - 30, { size: 28, col: K.hyp, alpha: ha }); }
+    say(c, `h = ${h.toFixed(1)}`, 80, 80, { font: MATH, size: 36 }); say(c, '金色：当前 h 的亮线      红色虚线：h → ∞ 的双曲线', 80, 134, { size: 30 });
+    this.syncUI && this.syncUI();
+  },
+});
+// 13 · translate, scale, flip → y = 1/x
+const NM = { u: .4, v: .3, i: 40 * DEG };
+Step({
+  title: '化简成 y = 1/x', dur: 12, hint: '',
+  beats: [
+    [0, R`把双曲线配方，可以找到它的中心 \(K\)：$$\Big(x+\frac{u}{\tan^2 i}\Big)\Big(y-\frac{v}{\sin^2 i}\Big)=-\frac{uv\cos^2 i}{\sin^4 i}$$`],
+    [2.5, R`① <b>平移</b>：把 K 挪到原点。形状不变，只换了位置。`],
+    [5, R`② <b>缩放</b>：横竖都除以 $$k=\frac{\sqrt{|uv|}\,\cos i}{\sin^2 i}$$ 右边就变成 ±1。`],
+    [7.5, R`③ <b>翻转</b>：如果 \(uv>0\)，右边是 −1，把上下翻过来就变成 +1。`],
+    [9.5, R`最后得到 $$x'y'=1,\qquad y'=\frac{1}{x'}$$ O 和 C 落在同一支上。托盘上看到的亮线，就是这一支中穿过盘面的那一段。`],
+  ],
+  controls: `<div class="ctl"><label for="c13u">圆心 u <output id="c13uo">0.40</output></label><input id="c13u" type="range" min="-80" max="80" value="40"></div><div class="ctl"><label for="c13v">圆心 v <output id="c13vo">0.30</output></label><input id="c13v" type="range" min="-80" max="80" value="30"></div>`,
+  bind(root) { const snap = x => { x /= 100; return Math.abs(x) < .15 ? (x < 0 ? -.15 : .15) : x; }; for (const k of ['u', 'v']) { const el = root.querySelector('#c13' + k), o = root.querySelector('#c13' + k + 'o'); el.oninput = () => { NM[k] = snap(+el.value); o.textContent = NM[k].toFixed(2); this.fit(); touch(); }; } },
+  geom() { const sI = Math.sin(NM.i), cI = Math.cos(NM.i), s2 = sI * sI, t2 = s2 / (cI * cI); return { K: [-NM.u / t2, NM.v / s2], C0: -NM.u * NM.v * cI * cI / (s2 * s2), k: Math.sqrt(Math.abs(NM.u * NM.v)) * cI / s2, sg: Math.sign(-NM.u * NM.v) || 1 }; },
+  T(g, p, x, y) { const a = eio(clamp(p, 0, 1)), b = eio(clamp(p - 1, 0, 1)), c = eio(clamp(p - 2, 0, 1)); let X = x - a * g.K[0], Y = y - a * g.K[1]; const m = Math.exp(-b * Math.log(g.k)); X *= m; Y *= m; Y *= lerp(1, g.sg, c); return [X, Y]; },
+  fit() { const g = this.geom(); let xs = [-2.9, 2.9], ys = [-2.9, 2.9]; for (const p of [0, 1, 2, 3]) for (const q of [[0, 0], [NM.u, NM.v], g.K]) { const r = this.T(g, p, q[0], q[1]); xs.push(r[0]); ys.push(r[1]); } this.S = Math.min(1560 / (Math.max(...xs) - Math.min(...xs)), 900 / (Math.max(...ys) - Math.min(...ys))); },
+  enter() { this.fit(); },
+  prog(t) { return eio(inv(2.5, 4.4, t)) + eio(inv(5, 6.9, t)) + eio(inv(7.5, 9.2, t)); },
+  draw(c, t) {
+    c.drawImage(art('grid'), 0, 0); const OX = 1010, OY = 540, g = this.geom(), p = this.prog(t), S = this.S, sx = X => OX + X * S, sy = Y => OY - Y * S;
+    arrowT(c, 70, OY, W - 60, OY, K.cream, 5); arrowT(c, OX, H - 50, OX, 40, K.cream, 5); const pr = p > 1.5 ? '′' : ''; say(c, 'x' + pr, W - 90, OY + 44, { font: MATH, size: 40 }); say(c, 'y' + pr, OX + 22, 70, { font: MATH, size: 40 });
+    const gA = clamp(p - 1.5, 0, 1) * .7; if (gA > 0) for (const s of [1, -1]) { const pts = []; for (let k = 0; k <= 160; k++) { const x = s * Math.exp(lerp(Math.log(.12), Math.log(8), k / 160)); pts.push([sx(x), sy(1 / x)]); } poly(c, pts, K.cream, 2.4, { dash: [3, 9], alpha: gA, shadow: false }); }
+    const Kt = this.T(g, p, g.K[0], g.K[1]); line(c, sx(Kt[0]), 40, sx(Kt[0]), H - 40, 'rgba(231,222,200,.55)', 2, [10, 10]); line(c, 40, sy(Kt[1]), W - 40, sy(Kt[1]), 'rgba(231,222,200,.55)', 2, [10, 10]);
+    for (const s of [1, -1]) { const pts = []; for (let k = 0; k <= 220; k++) { const tau = s * Math.exp(lerp(Math.log(Math.abs(g.C0) / 40), Math.log(40), k / 220)), r = this.T(g, p, g.K[0] + tau, g.K[1] + g.C0 / tau), X = sx(r[0]), Y = sy(r[1]); if (X < -200 || X > W + 200 || Y < -200 || Y > H + 200) continue; pts.push([X, Y]); } poly(c, pts, K.hyp, 6); }
+    const O = this.T(g, p, 0, 0), Cc = this.T(g, p, NM.u, NM.v); bead(c, sx(O[0]), sy(O[1]), 12, K.cream); bead(c, sx(Cc[0]), sy(Cc[1]), 12, '#cf4b40');
+    say(c, 'O', sx(O[0]) + 18, sy(O[1]) - 18, { font: MATH, size: 40 }); say(c, 'C', sx(Cc[0]) + 18, sy(Cc[1]) - 18, { font: MATH, size: 40 });
+    c.save(); c.strokeStyle = K.cream; c.lineWidth = 4; const kx = sx(Kt[0]), ky = sy(Kt[1]); c.beginPath(); c.moveTo(kx - 11, ky - 11); c.lineTo(kx + 11, ky + 11); c.moveTo(kx - 11, ky + 11); c.lineTo(kx + 11, ky - 11); c.stroke(); c.restore(); say(c, 'K', kx + 16, ky + 38, { font: MATH, size: 36 });
+    const names = ['原式：中心在 K', '① 平移：K 移到原点', '② 缩放：除以 k', '③ 翻转：x′y′ = 1']; say(c, names[Math.round(clamp(p, 0, 3))], 90, 90, { font: ZHS, weight: 600, size: 40, col: K.glow });
+    say(c, `k = ${g.k.toFixed(3)}    sgn(−uv) = ${g.sg > 0 ? '+1' : '−1'}`, 90, 146, { font: MATH, size: 32 });
+    if (t > 9.5) say(c, "y′ = 1 / x′", 90, 990, { font: MATH, size: 60, col: K.glow, alpha: smooth(9.5, 10.2, t) });
+  },
+});
+// 14 · the two limits, and the one-sentence summary
+Step({
+  title: '两个极端，和一句话总结', dur: 11, hint: '用下方滑块调入射角 i',
+  beats: [
+    [0, R`最后看入射角 \(i\) 的两个极端。把双曲线方程乘以 \(\sin^2 i\)：$$\sin^2 i\;xy-vx+u\cos^2 i\;y=0$$`],
+    [2, R`<b>i → 0</b>（灯几乎在正上方）：方程只剩 \(vx=uy\)，就是直线 OC。亮线像一条<b>直径</b>，一头指向灯的倒影 O。`],
+    [5, R`<b>i → 90°</b>（光几乎贴着盘面）：方程变成 \(x(y-v)=0\)，亮线折成直角：一段沿 \(x=0\)，一段沿 \(y=v\)。`],
+    [8, R`<b>一句话总结</b>：每道划痕只把光反射到一个圆锥上（\(\dd\cdot\ss=\rr\cdot\ss\)）；同心圆让满足条件的点连成一条经过 C 和 O 的曲线；眼睛很远时，这条曲线就是 y = 1/x 的一支。`],
+  ],
+  controls: `<div class="ctl"><label for="c14i">入射角 i <output id="c14io"></output></label><input id="c14i" type="range" min="3" max="87" value="30"></div>`,
+  bind(root) { const el = root.querySelector('#c14i'), o = root.querySelector('#c14io'); el.oninput = () => { this.iU = +el.value * DEG; touch(); }; this.syncUI = () => { o.textContent = (this.iNow / DEG).toFixed(0) + '°'; if (this.iU == null) el.value = Math.round(this.iNow / DEG); }; },
+  enter() { this.iU = null; this.key = ''; },
+  iAt(t) { const d = x => x * DEG; if (t < 2) return d(30); if (t < 4) return lerp(d(30), d(4), eio((t - 2) / 2)); if (t < 5) return d(4); if (t < 7.2) return lerp(d(4), d(86), eio((t - 5) / 2.2)); if (t < 8) return d(86); return lerp(d(86), d(30), eio((t - 8) / 1.5)); },
+  draw(c, t) {
+    c.drawImage(art('wall'), 0, 0); const u = .32, v = .22, R = 1.15, i = this.iNow = this.iU ?? this.iAt(t), s2 = Math.sin(i) ** 2, c2 = 1 - s2;
+    trayTop(c, u, v, R); const key = i.toFixed(4); if (this.key !== key) { this.key = key; this.hy = contour((x, y) => Hs(x, y, u, v, s2, c2), ...VIEW, 170, 96); }
+    const n = Math.hypot(u, v); line(c, tx(-u / n * 3), ty(-v / n * 3), tx(u / n * 3), ty(v / n * 3), K.cream, 2.5, [2, 10], .8); line(c, tx(0), 0, tx(0), H, K.green, 2.5, [2, 10], .7); line(c, 0, ty(v), W, ty(v), K.green, 2.5, [2, 10], .7);
+    segDraw(c, this.hy, K.hyp, 3, { dash: [12, 10], alpha: .8 }); segDraw(c, this.hy, K.glow, 6, { glow: 16, clip: [u, v, R] });
+    tagAt(c, tx(u), ty(v), 'C', 141, 1, 1); tagAt(c, tx(0), ty(0), 'O', 142, 1, -1);
+    say(c, `i = ${(i / DEG).toFixed(0)}°`, 80, 80, { font: MATH, size: 40 }); say(c, '白色点线：直线 OC（i → 0）     绿色点线：直角折线（i → 90°）', 80, 136, { size: 30 });
+    this.syncUI && this.syncUI();
+  },
+});
+// ═══════════════════════ PLAYER ═══════════════════════
+const cv = document.getElementById('stage'), ctx = cv.getContext('2d', { alpha: false });
+const $ = id => document.getElementById(id);
+let cur = null, idx = 0, playing = false, dirty = true, seen = new Set();
+const VIGN = (() => { const c = mk(W, H), g = g2(c); g.save(); g.translate(W / 2, H / 2); g.scale(1, H / W); const rg = g.createRadialGradient(0, 0, W * .25, 0, 0, W * .72); rg.addColorStop(0, 'rgba(4,14,16,0)'); rg.addColorStop(1, 'rgba(4,14,16,.45)'); g.fillStyle = rg; g.fillRect(-W, -W, W * 2, W * 2); g.restore(); return c; })();
+function render() { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.fillStyle = '#10201f'; ctx.fillRect(0, 0, W, H); cur.draw(ctx, cur.t); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.shadowColor = 'transparent'; ctx.filter = 'none'; ctx.save(); ctx.globalAlpha = .5; ctx.fillStyle = PAT.grain; ctx.fillRect(0, 0, W, H); ctx.restore(); ctx.drawImage(VIGN, 0, 0); }
+function typeset(el) { if (window.__mj && window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]).catch(() => {}); }
+window.__typeset = () => typeset($('card'));
+function setT(t, play) { cur.t = clamp(t, 0, cur.dur); if (play != null) playing = play; dirty = true; syncBeats(); syncTransport(); }
+function touch() { if (cur.t < cur.dur) { cur.t = cur.dur; playing = false; } dirty = true; syncBeats(); syncTransport(); }
+function go(n) {
+  idx = clamp(n, 0, STEPS.length - 1); cur = STEPS[idx]; seen.add(idx); cur.t = 0; cur.syncUI = null; cur.enter && cur.enter(); playing = !RMOT; if (RMOT) cur.t = cur.dur;
+  $('stepNo').textContent = `第 ${idx + 1} 步 / 共 ${STEPS.length} 步`; $('stepTitle').textContent = cur.title; $('hint').textContent = cur.hint || ''; cv.setAttribute('aria-label', '讲解动画：' + cur.title);
+  const ol = $('beats'); ol.innerHTML = cur.beats.map(([t, h], k) => `<li tabindex="0" data-k="${k}">${h}</li>`).join('');
+  ol.querySelectorAll('li').forEach(li => { const go2 = () => setT(cur.beats[+li.dataset.k][0] + .001, true); li.onclick = go2; li.onkeydown = e => { if (e.key === 'Enter') go2(); }; });
+  const ct = $('ctrls'); ct.innerHTML = cur.controls || ''; if (cur.bind) cur.bind(ct);
+  typeset($('card')); $('card').scrollTop = 0; lastNow = -1;
+  $('prev').disabled = idx === 0; $('next').textContent = idx === STEPS.length - 1 ? '回到第 1 步' : '下一步 →';
+  renderDots(); dirty = true; syncBeats(); syncTransport();
+  try { history.replaceState(null, '', '#s' + (idx + 1)); } catch (_) {} try { localStorage.setItem('glint-lesson-step', String(idx)); } catch (_) {}
+}
+function renderDots() { const d = $('dots'); d.innerHTML = STEPS.map((s, k) => `<li><button type="button" class="${k === idx ? 'on' : seen.has(k) ? 'seen' : ''}" data-k="${k}" title="${s.title}" aria-label="第 ${k + 1} 步：${s.title}">${k + 1}</button></li>`).join(''); d.querySelectorAll('button').forEach(b => b.onclick = () => go(+b.dataset.k)); }
+let lastBeat = -2;
+function syncBeats() { const lis = $('beats').children; let now = -1; cur.beats.forEach(([t], k) => { if (cur.t >= t) now = k; }); for (let k = 0; k < lis.length; k++) { lis[k].className = k < now ? 'past' : k === now ? 'now past' : 'future'; }
+  if (now !== lastBeat && now >= 0) { lastBeat = now; const card = $('card'), li = lis[now]; if (card.scrollHeight > card.clientHeight + 4 && li) { const top = li.offsetTop - card.offsetTop; if (top < card.scrollTop || top + li.offsetHeight > card.scrollTop + card.clientHeight) card.scrollTo({ top: top - 60, behavior: RMOT ? 'auto' : 'smooth' }); } } }
+function syncTransport() { $('scrub').value = Math.round(cur.t / cur.dur * 1000); $('play').textContent = playing ? '暂停' : cur.t >= cur.dur ? '重播' : '继续'; }
+$('play').onclick = () => { if (!playing && cur.t >= cur.dur) cur.t = 0; playing = !playing; dirty = true; syncTransport(); };
+$('replay').onclick = () => { const k = idx; go(k); };
+$('scrub').oninput = e => setT(+e.target.value / 1000 * cur.dur, false);
+$('prev').onclick = () => go(idx - 1);
+$('next').onclick = () => go(idx === STEPS.length - 1 ? 0 : idx + 1);
+addEventListener('keydown', e => { if (e.target.closest && e.target.closest('input,textarea')) return; if (e.key === 'ArrowRight') { e.preventDefault(); if (idx < STEPS.length - 1) go(idx + 1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); go(idx - 1); } else if (e.key === ' ' && !(e.target.closest && e.target.closest('button,li'))) { e.preventDefault(); $('play').click(); } });
+// pointer → stage world coordinates
+const toW = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+let dragging = false;
+cv.addEventListener('pointerdown', e => { if (!cur.down) return; const [x, y] = toW(e), res = cur.down(x, y); if (res) { if (res === true) { dragging = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {} } if (!cur.live) touch(); dirty = true; e.preventDefault(); } });
+cv.addEventListener('pointermove', e => { if (dragging && cur.move) { const [x, y] = toW(e); cur.move(x, y); dirty = true; } });
+const endDrag = () => { if (dragging && cur.up) cur.up(); dragging = false; dirty = true; };
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+let lastNow = -1, visible = true;
+if (window.IntersectionObserver) new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(cv);
+function frame(now) {
+  requestAnimationFrame(frame); const dt = lastNow < 0 ? 0 : Math.min(.05, (now - lastNow) / 1000); lastNow = now; if (!cur || !visible) return;
+  if (playing) { cur.t = Math.min(cur.dur, cur.t + dt); if (cur.t >= cur.dur) playing = false; dirty = true; syncBeats(); syncTransport(); }
+  if (cur.update) cur.update(cur.t, dt);
+  if (dirty || cur.live) { dirty = false; render(); }
+}
+// boot
+let start = 0; try { const m = /^#s(\d+)$/.exec(location.hash); if (m) start = +m[1] - 1; else { const s = localStorage.getItem('glint-lesson-step'); if (s != null) start = +s; } } catch (_) {}
+const boot = () => { go(isFinite(start) ? start : 0); requestAnimationFrame(frame); };
+if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(`500 30px ${ZH}`, '看懂划痕亮线镜面法线'), new Promise(r => setTimeout(r, 1200))]).then(boot, boot); else boot();
+window.__lesson = { go, setT: (t) => setT(t, false), steps: STEPS.length, render: () => render() };
+})();
+</script>
+</body>
+</html>
