@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>水面上的亮线</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap">
+<style>
+:root{
+  --bg:#E9F0F0; --surface:#F4F8F8; --ink:#15303A; --muted:#4B656E; --rule:#C3D4D6; --rule-soft:#D6E3E4;
+  --accent:#23697B; --hl:rgba(255,206,110,.45); --btn:#DAE7E8; --btn-hover:#CDDEE0; --focus:#23697B;
+  --display:"ZCOOL XiaoWei","Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E181B; --surface:#132124; --ink:#DCEAEC; --muted:#8FA8AE; --rule:#24363B; --rule-soft:#1B2A2E;
+    --accent:#7CC6D6; --hl:rgba(255,206,110,.22); --btn:#182A2E; --btn-hover:#203539; --focus:#7CC6D6;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E181B; --surface:#132124; --ink:#DCEAEC; --muted:#8FA8AE; --rule:#24363B; --rule-soft:#1B2A2E;
+  --accent:#7CC6D6; --hl:rgba(255,206,110,.22); --btn:#182A2E; --btn-hover:#203539; --focus:#7CC6D6;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.78}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:36px 72px;
+  display:grid;grid-template-columns:minmax(0,1fr);gap:36px}
+.player{width:min(100%,430px);margin-inline:auto}
+@media (min-width:900px){.wrap{grid-template-columns:auto minmax(0,1fr);gap:56px;align-items:start}
+  .player{width:min(430px,calc(84vh*9/16 + 2px));position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px)}}
+figure.stage{position:relative;margin:0;border-radius:10px;overflow:hidden;background:#8fbfcf;box-shadow:0 1px 0 var(--rule),0 12px 32px -18px rgba(20,60,70,.45)}
+figure.stage canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;cursor:crosshair;-webkit-user-select:none;user-select:none}
+.cap{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:max-content;max-width:88%;
+  font-family:var(--display);font-size:16px;line-height:1.55;color:#15303a;background:rgba(244,250,250,.9);
+  border:1px solid rgba(35,90,105,.25);border-radius:6px;padding:8px 13px;text-align:center;transition:opacity .35s}
+.cap:empty{opacity:0}
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px}
+.bar input[type=range]{flex:1;min-width:0}
+.bar output{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+button.b{font:500 13px/1 var(--sans);color:var(--ink);background:var(--btn);border:1px solid var(--rule);border-radius:4px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+button.b:hover{background:var(--btn-hover)}
+button.b[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+input[type=range]{accent-color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.ctl{margin-top:12px}
+.ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);line-height:1.4}
+.ctl output{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.ctl input{width:100%;margin:4px 0}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+
+.text{max-width:62ch}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;word-break:keep-all;overflow-wrap:break-word}
+h1{font-size:clamp(38px,5.6vw,58px);line-height:1.12}
+h2{font-size:24px;line-height:1.35;margin:34px 0 10px}
+p{margin:0 0 14px}
+.dek{color:var(--muted);font-size:17px;margin-top:14px}
+.key{font-weight:700;font-size:17px;margin:14px 0 16px}
+.key span{background:linear-gradient(transparent 58%,var(--hl) 58%);box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.eq{overflow-x:auto;overflow-y:hidden;margin:2px 0 12px}
+mjx-container[jax="SVG"][display="true"]{margin:.4em 0 !important;max-width:100%;overflow-x:auto;overflow-y:hidden}
+dl.diff{margin:6px 0 14px;display:grid;gap:12px}
+dl.diff dt{font-weight:700}
+dl.diff dd{margin:2px 0 0}
+.small{font-size:14px;color:var(--muted)}
+a{color:var(--accent)}
+</style>
+<script>
+window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["$$","$$"]]},svg:{fontCache:"global"},options:{enableMenu:false}};
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="player">
+    <figure class="stage">
+      <canvas id="pond" role="img" aria-label="俯视的池塘：树枝滴水激起同心圆波纹，阳光的反射亮点排成一条经过波心和太阳倒影的线"></canvas>
+      <div class="cap" id="cap" aria-live="polite"></div>
+    </figure>
+    <div class="bar">
+      <button class="b" id="play" type="button">暂停</button>
+      <input id="scrub" type="range" min="0" max="400" step="1" value="0" aria-label="时间轴">
+      <output id="clock">0:00 / 0:40</output>
+    </div>
+    <div class="row">
+      <button class="b" id="replay" type="button">重播讲解</button>
+      <button class="b" id="locus" type="button" aria-pressed="false">显示理论轨迹</button>
+    </div>
+    <p class="hint">点击水面任意位置，可以在那里滴一滴水。</p>
+    <div class="ctl"><label for="sun">阳光入射角 i <output id="sun-o"></output></label><input id="sun" type="range" min="10" max="60" step="1" value="30"></div>
+    <div class="ctl"><label for="eye">眼睛高度 h（以画面宽度为单位） <output id="eye-o"></output></label><input id="eye" type="range" min="0" max="1000" step="1" value="560"></div>
+  </div>
+
+  <article class="text">
+    <p class="eyebrow">续篇 · 从划痕到水波</p>
+    <h1>水面上的亮线</h1>
+    <p class="dek">同心圆水波和同心圆划痕，是同一道几何题。左边的动画按反射定律逐像素计算：阳光方向、水面法向、眼睛方向三者对上的地方才亮。</p>
+
+    <h2>结论</h2>
+    <p class="key"><span>亮线同样存在，轨迹与划痕完全相同：它经过波心 C 和太阳倒影 O；眼睛很远时，它是双曲线 y = 1/x 的一支。</span></p>
+
+    <h2>为什么能直接搬过来</h2>
+    <p>沟槽方程只用到一个性质：法向垂直于槽的方向。任何绕 C 轴对称的起伏 z = f(ρ) 都有这个性质：</p>
+    <div class="eq">$$\vec n\propto\big(-f'(\rho)\,\hat\rho,\;1\big)\ \perp\ \hat s\quad\Longrightarrow\quad \hat r\cdot\hat s=\hat d\cdot\hat s$$</div>
+    <p>这个条件里没有波长、振幅、半径，也没有时间。所以轨迹只由 C、O、入射角 i、眼睛高度 h 决定。</p>
+    <p class="key"><span>波纹一直向外走，亮线却钉在原地不动。</span></p>
+
+    <h2>和划痕的四处不同</h2>
+    <dl class="diff">
+      <dt>1. 坡度有上限，亮线两端会淡出</dt>
+      <dd>划痕的截面包含从平到陡的所有倾角。水波的最大坡度只有 \(Ak\)（A 为振幅，k 为波数）。轨迹上的点还必须满足第二个条件：局部坡度恰好等于所需倾角，约为 \(\rho_O/(2L)\) 量级（\(\rho_O\) 是到 O 的距离，L 是眼睛的距离）。离 O 越远，需要的倾角越大，超过 \(Ak\) 就不亮了。把眼睛高度调低，可以看到亮线缩短。</dd>
+      <dt>2. 亮线是一串在滑动的点</dt>
+      <dd>一个波长里，坡度只在两个相位上刚好合适，所以亮线由一串离散亮点组成。波纹外扩时，这些点沿着固定的轨迹向外滑动。</dd>
+      <dt>3. 必须是点光源</dt>
+      <dd>你发的那张插画是漫射天光照明，所以只看到明暗相间的环，没有亮线。换成太阳或路灯，这条线才会出现。</dd>
+      <dt>4. 多个波源叠加会破坏它</dt>
+      <dd>两组波纹重叠时，法向不再沿着某一个圆心的径向，重叠区域的亮线会被打乱。点击水面连续滴几滴，可以看到这个效果。</dd>
+    </dl>
+    <p class="small">水在垂直入射时的反射率约为 \(\big(\tfrac{n-1}{n+1}\big)^2\approx 2\%\)，但太阳足够亮，亮点依然刺眼。动画中亮点的判据是：波面法向与“太阳—眼睛”半角方向的夹角小于容差。容差取太阳的角半径，并按像素内坡度的变化量放宽，以免漏掉亚像素宽的亮点。</p>
+    <p class="small">完整推导（沟槽方程、假分支、化成 y = 1/x）见 <a href="https://claude.ai/artifact/FF3J57BHhRTE2jRpjprypV" target="_blank" rel="noopener">划痕里的双曲线</a>。</p>
+  </article>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const DEG=Math.PI/180,TAU=Math.PI*2;
+const RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),lerp=(a,b,t)=>a+(b-a)*t;
+function rng(seed){return ()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const DISPLAY='"ZCOOL XiaoWei","Noto Serif SC",serif';
+
+/* ---------- world & physics constants ---------- */
+const WW=2.4, CY=-0.2;                  // world width across the frame, view centre y
+const LAM=0.11, K=TAU/LAM, SPEED=0.22;  // wavelength, wavenumber, ripple speed (world units / s)
+const S0=0.16;                           // max ripple slope A·k
+const SIG_SUN=0.005;                     // angular tolerance (sun radius scale)
+const TOTAL=40;
+const STORY=[{C:[0.42,-0.62],t0:3,t1:25},{C:[-0.5,0.62],t0:25.5,t1:1e9}];
+const CAPS=[
+  [0,3,"平静的水面上，太阳只在一个点反光。这个点记作 O。"],
+  [3,5.5,"树枝上的水，一滴滴落在 C 点。"],
+  [5.5,13,"波纹一圈圈向外扩散，亮点却排成一条线，而且这条线不动。"],
+  [13,19,"这条线同时经过波心 C 和太阳的倒影 O。"],
+  [19,22.3,"原因：波纹绕 C 轴对称，每一点的法向都指向径向（箭头）。"],
+  [22.3,25.5,"于是沿波纹方向的分量，反射前后不变：d̂·ŝ = r̂·ŝ，这和划痕满足的是同一个条件。"],
+  [25.5,32,"换一个落点，亮线跟着转向，但仍然经过 O。"],
+  [32,TOTAL+0.01,"眼睛足够远时，这条线是双曲线 y = 1/x 的一支；太阳越高，它越接近直线 OC。"]
+];
+
+const S={i:30*DEG,h:7,T:RM?16:0,playing:!RM,story:true,freeT:0,user:[],locus:false,visible:true};
+
+/* ---------- canvas setup ---------- */
+const cv=$("#pond"),ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1,sc=1,bg=null,lw=0,lh=0,pix=0,shadeC=null,glintC=null,shadeImg=null,glintImg=null,Ibuf=null,bh=null,need=true;
+const X=x=>W/2+x*sc, Y=y=>H/2-(y-CY)*sc, inv=(px,py)=>[(px-W/2)/sc,CY-(py-H/2)/sc];
+function fit(){const r=cv.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.round(r.width),h=Math.round(r.height);if(w<2||(w===W&&h===H&&dpr===DPR))return;
+  W=w;H=h;DPR=dpr;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);sc=W/WW;
+  bg=makeBg();lw=Math.round(W/1.5);lh=Math.round(H/1.5);pix=WW/lw;
+  shadeC=document.createElement("canvas");shadeC.width=lw;shadeC.height=lh;shadeImg=shadeC.getContext("2d").createImageData(lw,lh);
+  glintC=document.createElement("canvas");glintC.width=lw;glintC.height=lh;glintImg=glintC.getContext("2d").createImageData(lw,lh);
+  Ibuf=new Float32Array(lw*lh);computeB();need=true;}
+if(window.ResizeObserver)new ResizeObserver(fit).observe(cv);else addEventListener("resize",fit);
+if(window.IntersectionObserver)new IntersectionObserver(es=>{for(const e of es)S.visible=e.isIntersecting;}).observe(cv);
+
+/* half-vector b = (r̂ − d̂)/|r̂ − d̂| depends only on position, i, h: cache its horizontal part */
+function computeB(){if(!lw)return;bh=new Float32Array(lw*lh*2);
+  const sI=Math.sin(S.i),cI=Math.cos(S.i),hT=S.h*Math.tan(S.i),h=S.h;
+  for(let j=0;j<lh;j++){const y=CY+(H/2-(j+.5)*H/lh)/sc;
+    for(let k=0;k<lw;k++){const x=((k+.5)*W/lw-W/2)/sc;
+      const ex=-x,ey=-hT-y,en=Math.sqrt(ex*ex+ey*ey+h*h);
+      const bx=ex/en,by=ey/en+sI,bz=h/en+cI,bn=Math.sqrt(bx*bx+by*by+bz*bz);
+      bh[2*(j*lw+k)]=bx/bn;bh[2*(j*lw+k)+1]=by/bn;}}
+  locusCache.key="";}
+
+/* ---------- illustrated background (static) ---------- */
+function makeBg(){
+  const c0=document.createElement("canvas");c0.width=Math.round(W*DPR);c0.height=Math.round(H*DPR);
+  const c=c0.getContext("2d");c.scale(DPR,DPR);const R=rng(11);
+  let g=c.createLinearGradient(0,0,W,0);g.addColorStop(0,"#6fa8bd");g.addColorStop(.28,"#98c8d7");g.addColorStop(.72,"#98c8d7");g.addColorStop(1,"#6fa8bd");
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+  // sky/cloud reflection: horizontal brushy rows
+  c.lineCap="round";
+  for(let y=4;y<H;y+=2.6){const t=y/H;const e=1-Math.pow((t-.5)/.47,2);if(e<=0)continue;
+    const hw=W*.40*Math.sqrt(e),cx=W*(.5+.035*Math.sin(t*7.3));
+    const j1=(Math.sin(t*43)*.5+Math.sin(t*101+1.7)*.3+(R()-.5)*.7)*W*.07,j2=(Math.sin(t*37+.8)*.5+Math.sin(t*89)*.3+(R()-.5)*.7)*W*.07;
+    const L=cx-hw+j1,Rr=cx+hw+j2;
+    c.strokeStyle=`rgba(232,244,245,${.78+R()*.18})`;c.lineWidth=2.4;c.beginPath();c.moveTo(L,y);c.lineTo(Rr,y);c.stroke();
+    c.lineWidth=1.6;for(let k=0;k<2;k++){let len=8+R()*34,x0=L-R()*W*.09-len;c.strokeStyle=`rgba(226,241,243,${.4+R()*.4})`;c.beginPath();c.moveTo(x0,y);c.lineTo(x0+len,y);c.stroke();
+      len=8+R()*34;x0=Rr+R()*W*.09;c.beginPath();c.moveTo(x0,y);c.lineTo(x0+len,y);c.stroke();}}
+  // small cloud puffs
+  for(const [fx,fy,fw,fh] of [[.26,.15,.22,.05],[.74,.82,.2,.045]])
+    for(let y=-fh;y<=fh;y+=.004){const e=1-(y/fh)**2;const hw=fw*Math.sqrt(e)*W*.5;const yy=(fy+y)*H,cx=fx*W+(R()-.5)*8;
+      c.strokeStyle=`rgba(246,251,251,${.35+R()*.25})`;c.lineWidth=2;c.beginPath();c.moveTo(cx-hw,yy);c.lineTo(cx+hw,yy);c.stroke();}
+  // hatching
+  const n=Math.round(W*H/38);
+  for(let k=0;k<n;k++){const x=R()*W,y=R()*H,len=3+R()*20,r=R();
+    c.strokeStyle=r<.45?"rgba(255,255,255,.28)":r<.8?"rgba(52,110,130,.18)":"rgba(190,225,232,.35)";
+    c.lineWidth=r<.8?1:1.4;c.beginPath();c.moveTo(x,y);c.lineTo(x+len,y);c.stroke();}
+  // paper grain
+  for(let k=0;k<n*.6;k++){c.fillStyle=R()<.5?"rgba(255,255,255,.07)":"rgba(30,70,85,.06)";c.fillRect(R()*W,R()*H,1,1);}
+  // branch shadow, top right
+  c.save();c.fillStyle="rgba(58,108,128,.5)";c.strokeStyle="rgba(58,108,128,.5)";c.lineCap="round";
+  const br=(x0,y0,x1,y1,x2,y2,w)=>{c.lineWidth=w;c.beginPath();c.moveTo(x0*W,y0*H);c.quadraticCurveTo(x1*W,y1*H,x2*W,y2*H);c.stroke();};
+  br(1.04,.0,.86,.07,.56,.155,W*.022);br(.8,.09,.74,.05,.66,.045,W*.008);br(.66,.13,.62,.17,.57,.215,W*.007);br(.9,.05,.95,.1,.99,.12,W*.008);
+  const lf=(x,y,a,s)=>{c.save();c.translate(x*W,y*H);c.rotate(a);c.beginPath();c.ellipse(0,0,s*W,s*W*.38,0,0,TAU);c.fill();c.restore();};
+  for(const q of [[.6,.03,.4,.03],[.64,.02,-.5,.026],[.71,.03,.9,.028],[.55,.2,1.2,.027],[.6,.235,.3,.03],[.52,.13,-.3,.025],[.83,.12,.7,.03],[.76,.14,-.8,.026],[.96,.14,1.1,.028],[.93,.03,-1.2,.026]])lf(...q);
+  c.restore();
+  // soft vignette
+  g=c.createRadialGradient(W/2,H*.48,W*.3,W/2,H*.5,H*.62);g.addColorStop(0,"rgba(40,90,110,0)");g.addColorStop(1,"rgba(40,90,110,.28)");c.fillStyle=g;c.fillRect(0,0,W,H);
+  return c0;}
+
+/* ---------- ripple field ---------- */
+function sources(){
+  if(S.story)return STORY.filter(s=>S.T>s.t0).map(s=>({C:s.C,tau:S.T-s.t0,dur:s.t1-s.t0}));
+  return S.user.filter(s=>S.freeT>s.t0).map(s=>({C:s.C,tau:S.freeT-s.t0,dur:s.t1-s.t0}));}
+const sm=x=>0.5*(1+Math.tanh(x/0.04));
+function env(rho,src){const front=SPEED*src.tau,back=SPEED*(src.tau-src.dur);
+  let g=sm(front-rho);if(back>0)g*=sm(rho-back);
+  return g/Math.sqrt(1+rho/0.35)*(1-Math.exp(-rho*rho/0.0025));}
+
+function renderWater(srcs){
+  const sd=shadeImg.data,gd=glintImg.data;
+  const pre=srcs.map(s=>({cx:s.C[0],cy:s.C[1],front:SPEED*s.tau,back:SPEED*(s.tau-s.dur)}));
+  for(let j=0;j<lh;j++){const y=CY+(H/2-(j+.5)*H/lh)/sc;
+    for(let k=0;k<lw;k++){const x=((k+.5)*W/lw-W/2)/sc,p=j*lw+k;
+      let gx=0,gy=0,amp=0,best=0,e1x=1,e1y=0;
+      for(let q=0;q<pre.length;q++){const s=pre[q];const dx=x-s.cx,dy=y-s.cy,rho=Math.sqrt(dx*dx+dy*dy)+1e-9;
+        if(rho>s.front+0.16)continue;if(s.back>0&&rho<s.back-0.16)continue;
+        let g=sm(s.front-rho);if(s.back>0)g*=sm(rho-s.back);g*=1/Math.sqrt(1+rho/0.35)*(1-Math.exp(-rho*rho/0.0025));
+        if(g<1e-3)continue;
+        const sl=S0*g*Math.cos(K*(rho-s.front));gx+=sl*dx/rho;gy+=sl*dy/rho;amp+=S0*K*g;
+        if(g>best){best=g;e1x=dx/rho;e1y=dy/rho;}}
+      const N=Math.sqrt(1+gx*gx+gy*gy),nx=-gx/N,ny=-gy/N;
+      // shading: tilt toward the bright (+y) side of the sky looks lighter
+      const v=clamp(ny*6,-1,1),o=4*p;
+      if(v>0){sd[o]=236;sd[o+1]=248;sd[o+2]=249;sd[o+3]=v*150;}else{sd[o]=34;sd[o+1]=88;sd[o+2]=106;sd[o+3]=-v*140;}
+      // glint: surface normal vs half-vector
+      const dx_=nx-bh[2*p],dy_=ny-bh[2*p+1];
+      const a1=dx_*e1x+dy_*e1y,a2=-dx_*e1y+dy_*e1x;
+      const s1=SIG_SUN+0.2*amp*pix,s2=SIG_SUN+0.0012*Math.min(1,best*4);
+      const I=Math.exp(-(a1*a1)/(s1*s1)-(a2*a2)/(s2*s2));Ibuf[p]=I;
+      gd[o]=255;gd[o+1]=247;gd[o+2]=222;gd[o+3]=Math.min(255,I*270);}}
+  shadeC.getContext("2d").putImageData(shadeImg,0,0);glintC.getContext("2d").putImageData(glintImg,0,0);}
+
+/* ---------- vector layers ---------- */
+function crestRings(c,srcs){
+  for(const s of srcs){const front=SPEED*s.tau,back=SPEED*(s.tau-s.dur);const cx=X(s.C[0]),cy=Y(s.C[1]);
+    // crest (z max) at K(ρ−front)=π/2 (mod 2π)
+    const n0=Math.floor(-(front)*K/TAU)-1;
+    for(let n=0;n>=n0;n--){const rho=front+(Math.PI/2+TAU*n)/K;if(rho<0.035)break;if(rho>front+0.05)continue;if(back>0&&rho<back)break;
+      const g=env(rho,s);if(g<0.04)continue;
+      c.strokeStyle=`rgba(33,82,98,${Math.min(.85,g*1.05)})`;c.lineWidth=1.6;c.beginPath();c.arc(cx,cy,rho*sc,0,TAU);c.stroke();
+      // tangential hatch arcs (seeded per ring so they travel with it)
+      const ringId=Math.round((rho-front)*K/TAU)-Math.round(s.tau*SPEED*K/TAU)+s.C[0]*97;
+      const R=rng(Math.floor(ringId*131+7));c.strokeStyle=`rgba(236,248,250,${Math.min(.55,g*.7)})`;c.lineWidth=1;
+      for(let m=0;m<7;m++){const a0=R()*TAU,da=.15+R()*.35,rr=(rho-LAM*(.18+R()*.3))*sc;if(rr<3)continue;c.beginPath();c.arc(cx,cy,rr,a0,a0+da);c.stroke();}}
+    // pale centre where the drops land
+    const gC=c.createRadialGradient(cx,cy,0,cx,cy,.07*sc);gC.addColorStop(0,"rgba(246,252,252,.85)");gC.addColorStop(1,"rgba(246,252,252,0)");
+    c.fillStyle=gC;c.beginPath();c.arc(cx,cy,.07*sc,0,TAU);c.fill();}}
+
+function sparkles(c){
+  const pts=[];
+  for(let j=1;j<lh-1;j++)for(let k=1;k<lw-1;k++){const p=j*lw+k,v=Ibuf[p];if(v<.55)continue;
+    if(v>Ibuf[p-1]&&v>Ibuf[p-lw]&&v>Ibuf[p-lw-1]&&v>Ibuf[p-lw+1]&&v>=Ibuf[p+1]&&v>=Ibuf[p+lw]&&v>=Ibuf[p+lw-1]&&v>=Ibuf[p+lw+1])pts.push([k,j,v]);}
+  pts.sort((a,b)=>b[2]-a[2]);
+  c.save();c.globalCompositeOperation="lighter";c.lineCap="round";
+  for(const [k,j,v] of pts.slice(0,90)){const x=(k+.5)*W/lw,y=(j+.5)*H/lh,s=2.5+8*v*v;
+    const g=c.createRadialGradient(x,y,0,x,y,s*1.3);g.addColorStop(0,"rgba(255,244,210,.8)");g.addColorStop(1,"rgba(255,230,170,0)");
+    c.fillStyle=g;c.beginPath();c.arc(x,y,s*1.3,0,TAU);c.fill();
+    c.strokeStyle=`rgba(255,252,240,${.55+.45*v})`;c.lineWidth=1.2;c.beginPath();
+    c.moveTo(x-s,y);c.lineTo(x+s,y);c.moveTo(x,y-s);c.lineTo(x,y+s);
+    const d=s*.45;c.moveTo(x-d,y-d);c.lineTo(x+d,y+d);c.moveTo(x-d,y+d);c.lineTo(x+d,y-d);c.stroke();}
+  c.restore();}
+
+/* locus: zero set of (d̂ − r̂)·s with s the unnormalised tangent about C */
+const locusCache={key:"",segs:[]};
+function locusSegs(C){const key=[C[0],C[1],S.i,S.h,W,H].join();if(locusCache.key===key)return locusCache.segs;
+  const sI=Math.sin(S.i),hT=S.h*Math.tan(S.i),h=S.h,u=C[0],v=C[1];
+  const f=(x,y)=>{const sx=y-v,sy=u-x,ey=-hT-y,en=Math.sqrt(x*x+ey*ey+h*h);return -sI*sy-(-x*sx+ey*sy)/en;};
+  const nx=70,ny=Math.round(70*H/W),x0=-WW/2,x1=WW/2,y1=CY+H/2/sc,y0=CY-H/2/sc,dx=(x1-x0)/nx,dy=(y1-y0)/ny,Wd=nx+1;
+  const g=new Float64Array(Wd*(ny+1));for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)g[j*Wd+i]=f(x0+i*dx+1e-4,y0+j*dy+1e-4);
+  const segs=[];
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const a=g[j*Wd+i],b=g[j*Wd+i+1],cc=g[(j+1)*Wd+i+1],d=g[(j+1)*Wd+i];
+    const pa=a>0,pb=b>0,pc=cc>0,pd=d>0;if(pa===pb&&pb===pc&&pc===pd)continue;const Xx=x0+i*dx,Yy=y0+j*dy,p=[];
+    if(pa!==pb)p.push(Xx+dx*a/(a-b),Yy);if(pb!==pc)p.push(Xx+dx,Yy+dy*b/(b-cc));
+    if(pc!==pd)p.push(Xx+dx-dx*cc/(cc-d),Yy+dy);if(pd!==pa)p.push(Xx,Yy+dy-dy*d/(d-a));
+    if(p.length===4)segs.push(...p);else if(p.length===8)segs.push(...p);}
+  locusCache.key=key;locusCache.segs=segs;return segs;}
+function drawLocus(c,C,alpha){if(alpha<=0)return;const s=locusSegs(C);
+  c.save();c.globalAlpha=alpha;c.strokeStyle="rgba(255,249,228,.95)";c.lineWidth=1.8;c.setLineDash([7,6]);c.beginPath();
+  for(let k=0;k<s.length;k+=4){c.moveTo(X(s[k]),Y(s[k+1]));c.lineTo(X(s[k+2]),Y(s[k+3]));}c.stroke();c.restore();}
+
+function drawNormals(c,src,alpha){if(alpha<=0||!src)return;const front=SPEED*src.tau;
+  const base=front+Math.round((0.5-front)*K/TAU)*TAU/K; // ring with maximal +slope near ρ≈0.5
+  c.save();c.globalAlpha=alpha;
+  for(const [rho,sgn] of [[base,-1],[base+LAM/2,1]]){if(rho<0.12)continue;const cx=X(src.C[0]),cy=Y(src.C[1]);
+    for(let m=0;m<14;m++){const a=m*TAU/14+.1,ux=Math.cos(a),uy=Math.sin(a);const px=cx+ux*rho*sc,py=cy-uy*rho*sc,L=14*sgn;
+      const tx=px+ux*L,ty=py-uy*L;c.strokeStyle="#173f4c";c.fillStyle="#173f4c";c.lineWidth=1.8;
+      c.beginPath();c.moveTo(px,py);c.lineTo(tx,ty);c.stroke();const an=Math.atan2(ty-py,tx-px);
+      c.beginPath();c.moveTo(tx,ty);c.lineTo(tx-6*Math.cos(an-.45),ty-6*Math.sin(an-.45));c.lineTo(tx-6*Math.cos(an+.45),ty-6*Math.sin(an+.45));c.closePath();c.fill();}}
+  c.restore();}
+
+function leafShape(c,L){c.beginPath();c.moveTo(-L/2,0);c.bezierCurveTo(-L*.2,-L*.34,L*.26,-L*.3,L/2,0);c.bezierCurveTo(L*.26,L*.3,-L*.2,L*.34,-L/2,0);c.closePath();}
+function leaf(c,x,y,L,rot){c.save();c.translate(x,y);c.rotate(rot);
+  c.save();c.translate(4,6);leafShape(c,L);c.fillStyle="rgba(28,72,88,.25)";c.fill();c.restore();
+  leafShape(c,L);c.fillStyle="#8cc261";c.fill();
+  c.save();leafShape(c,L);c.clip();c.fillStyle="#74a84a";c.fillRect(-L/2,0,L,L);c.restore();
+  c.strokeStyle="#dcefbd";c.lineWidth=1.3;c.beginPath();c.moveTo(-L*.46,0);c.lineTo(L*.44,0);
+  for(let k=1;k<6;k++){const t=-L*.4+k*L*.14;c.moveTo(t,0);c.lineTo(t+L*.1,-L*.14);c.moveTo(t,0);c.lineTo(t+L*.1,L*.14);}c.stroke();
+  leafShape(c,L);c.strokeStyle="#284628";c.lineWidth=1.7;c.stroke();
+  c.strokeStyle="#284628";c.lineWidth=1.6;c.beginPath();c.moveTo(-L/2,0);c.lineTo(-L*.62,L*.03);c.stroke();c.restore();}
+function lilypad(c,x,y,r,rot){c.save();c.translate(x,y);c.rotate(rot);
+  const shape=()=>{c.beginPath();c.moveTo(0,0);c.arc(0,0,r,.22,TAU-.22);c.closePath();};
+  c.save();c.translate(4,6);shape();c.fillStyle="rgba(28,72,88,.25)";c.fill();c.restore();
+  shape();c.fillStyle="#85bd58";c.fill();c.strokeStyle="#d7ecb6";c.lineWidth=1.2;c.beginPath();
+  for(let k=0;k<11;k++){const a=.4+k*(TAU-.8)/10;c.moveTo(0,0);c.lineTo(Math.cos(a)*r*.92,Math.sin(a)*r*.92);}c.stroke();
+  shape();c.strokeStyle="#284628";c.lineWidth=1.7;c.stroke();c.restore();}
+function reed(c,x,h,lean){const y=H;c.save();c.translate(x,y);c.rotate(lean);
+  c.fillStyle="rgba(232,246,247,.55)";c.beginPath();c.ellipse(0,-h*.72,9,3.5,0,0,TAU);c.fill();
+  c.beginPath();c.moveTo(-5,0);c.lineTo(0,-h);c.lineTo(5,0);c.closePath();c.fillStyle="#7c9a4f";c.fill();c.strokeStyle="#284628";c.lineWidth=1.4;c.stroke();
+  c.restore();}
+
+function marker(c,x,y,lab,sub){const px=X(x),py=Y(y);
+  c.lineWidth=3;c.strokeStyle="rgba(21,48,58,.9)";c.beginPath();c.arc(px,py,6,0,TAU);c.stroke();
+  c.lineWidth=1.6;c.strokeStyle="#fffaf0";c.beginPath();c.arc(px,py,6,0,TAU);c.stroke();
+  c.font=`20px ${DISPLAY}`;c.textAlign="left";c.textBaseline="middle";c.lineJoin="round";c.lineWidth=4;c.strokeStyle="rgba(244,250,250,.9)";
+  c.strokeText(lab,px+10,py-12);c.fillStyle="#15303a";c.fillText(lab,px+10,py-12);
+  if(sub){c.font=`13px ${DISPLAY}`;c.strokeText(sub,px+10,py+8);c.fillText(sub,px+10,py+8);}}
+
+function droplet(c,C,t){ // a drip every 1.1 s: falls away from the viewer (shrinks), then splashes
+  const ph=(t%1.1)/1.1,px=X(C[0]),py=Y(C[1]);
+  if(ph<.32){const s=lerp(9,3,ph/.32);c.fillStyle="rgba(28,72,88,.25)";c.beginPath();c.arc(px+s*.6,py+s*.8,s,0,TAU);c.fill();
+    const g=c.createRadialGradient(px-s*.3,py-s*.3,0,px,py,s);g.addColorStop(0,"#fdffff");g.addColorStop(1,"#a8d4e0");c.fillStyle=g;c.beginPath();c.arc(px,py,s,0,TAU);c.fill();
+    c.strokeStyle="#2b5a68";c.lineWidth=1.2;c.stroke();}
+  else if(ph<.55){const q=(ph-.32)/.23;c.strokeStyle=`rgba(250,254,254,${1-q})`;c.lineWidth=1.6;c.beginPath();c.arc(px,py,4+q*14,0,TAU);c.stroke();}}
+
+/* ---------- main draw ---------- */
+const leaves=[{t:"leaf",x:.13,y:.12,L:.19,r:-1.05,p:0},{t:"pad",x:.93,y:.36,L:.085,r:2.2,p:1.3},{t:"leaf",x:.84,y:.9,L:.17,r:-.45,p:2.1},{t:"leaf",x:.07,y:.67,L:.09,r:-.35,p:3.3}];
+function draw(){
+  const c=ctx;c.setTransform(DPR,0,0,DPR,0,0);
+  const srcs=sources(),now=S.story?S.T:S.freeT;
+  c.drawImage(bg,0,0,W,H);
+  renderWater(srcs);
+  c.imageSmoothingEnabled=true;c.drawImage(shadeC,0,0,W,H);
+  crestRings(c,srcs);
+  c.save();c.globalCompositeOperation="lighter";c.drawImage(glintC,0,0,W,H);c.restore();
+  sparkles(c);
+  // overlays
+  const fade=(a,b)=>clamp((S.T-a)/(b-a),0,1);
+  if(S.story){
+    if(S.locus||S.T>=13)drawLocus(c,STORY[0].C,S.locus?.9:fade(13,14.5)*(S.T<25.5?.9:.35));
+    if(S.T>=26.5||(S.locus&&S.T>25.5))drawLocus(c,STORY[1].C,S.locus?.9:fade(26.5,28)*.9);
+    if(S.T>=19&&S.T<25.5)drawNormals(c,srcs[0],Math.min(fade(19,19.8),clamp((25.5-S.T)/.6,0,1)));
+  }else if(S.locus){for(const s of srcs)if(s.tau*SPEED>0.1)drawLocus(c,s.C,.85);}
+  const tt=performance.now()/1000;
+  for(const l of leaves){const x=(l.x+.006*Math.sin(tt*.35+l.p))*W,y=(l.y+.004*Math.sin(tt*.27+l.p*2))*H,r=l.r+.05*Math.sin(tt*.3+l.p);
+    if(l.t==="pad")lilypad(c,x,y,l.L*W,r);else leaf(c,x,y,l.L*W,r);}
+  for(const [fx,fh,le] of [[.05,.07,-.25],[.19,.05,.2],[.37,.075,-.1],[.64,.05,.15],[.75,.08,-.18],[.94,.06,.25]])reed(c,fx*W,fh*H,le);
+  marker(c,0,0,"O","太阳倒影");
+  for(const s of srcs){marker(c,s.C[0],s.C[1],"C");}
+  const drips=S.story?STORY.filter(s=>S.T>s.t0-0.4&&S.T<s.t1):S.user.filter(s=>S.freeT>s.t0-0.4&&S.freeT<s.t1);
+  for(const s of drips)droplet(c,s.C,now-s.t0+0.4);
+  if(!S.story)label2(c,"自由模式："+S.user.length+" 个落点",12,20);}
+function label2(c,s,x,y){c.font=`15px ${DISPLAY}`;c.textAlign="left";c.textBaseline="middle";c.lineJoin="round";c.lineWidth=4;c.strokeStyle="rgba(244,250,250,.9)";c.strokeText(s,x,y);c.fillStyle="#15303a";c.fillText(s,x,y);}
+
+/* ---------- timeline & UI ---------- */
+const cap=$("#cap"),scrub=$("#scrub"),clock=$("#clock"),playBtn=$("#play");
+const mmss=t=>Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0");
+let lastCap="";
+function syncUI(){
+  if(S.story){const c=CAPS.find(c=>S.T>=c[0]&&S.T<c[1]);const txt=S.T>=TOTAL?"点击水面滴一滴水，或者重播讲解。":c?c[2]:"";
+    if(txt!==lastCap){cap.textContent=txt;lastCap=txt;}
+    if(!scrubbing)scrub.value=Math.round(S.T*10);clock.textContent=mmss(S.T)+" / "+mmss(TOTAL);}
+  else{const txt="自由模式：再点一处，旧的水滴会停下。";if(txt!==lastCap){cap.textContent=txt;lastCap=txt;}clock.textContent="自由模式";}
+  playBtn.textContent=S.playing?"暂停":"播放";}
+let scrubbing=false;
+scrub.addEventListener("input",()=>{scrubbing=true;S.story=true;S.T=+scrub.value/10;need=true;syncUI();});
+scrub.addEventListener("change",()=>{scrubbing=false;});
+playBtn.addEventListener("click",()=>{if(S.story&&S.T>=TOTAL)S.T=0;S.playing=!S.playing;syncUI();need=true;});
+$("#replay").addEventListener("click",()=>{S.story=true;S.T=0;S.playing=true;S.user=[];syncUI();need=true;});
+const locBtn=$("#locus");locBtn.addEventListener("click",()=>{S.locus=!S.locus;locBtn.setAttribute("aria-pressed",String(S.locus));need=true;});
+function slider(id,fmt,cb){const el=$("#"+id),out=$("#"+id+"-o");const f=()=>{out.textContent=fmt(+el.value);cb(+el.value);};el.addEventListener("input",f);f();}
+slider("sun",v=>v+"°",v=>{S.i=v*DEG;computeB();need=true;});
+slider("eye",v=>(2*Math.pow(20/2,v/1000)).toFixed(1),v=>{S.h=2*Math.pow(10,v/1000);computeB();need=true;});
+cv.addEventListener("pointerdown",e=>{const r=cv.getBoundingClientRect();const [x,y]=inv(e.clientX-r.left,e.clientY-r.top);
+  if(S.story){S.story=false;S.freeT=0;S.user=[];}
+  for(const u of S.user)if(u.t1>S.freeT)u.t1=S.freeT;
+  S.user.push({C:[x,y],t0:S.freeT+0.4,t1:1e9});if(S.user.length>4)S.user.shift();
+  S.playing=true;need=true;syncUI();});
+
+let last=performance.now();
+function frame(t){const dt=Math.min(.05,Math.max(0,(t-last)/1000));last=t;
+  if(W>1&&S.visible){
+    if(S.playing){if(S.story){S.T=Math.min(TOTAL,S.T+dt);if(S.T>=TOTAL)S.playing=false;}else S.freeT+=dt;need=true;}
+    if(!RM)need=true; // leaves drift
+    if(need){need=false;draw();syncUI();}}
+  requestAnimationFrame(frame);}
+fit();syncUI();requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{need=true;});
+})();
+</script>
+</body>
+</html>

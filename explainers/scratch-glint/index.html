@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>划痕里的双曲线</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap">
+<style>
+:root{
+  --bg:#ECEFF2; --surface:#F6F8FA; --ink:#141C27; --muted:#546070; --rule:#CAD2DB; --rule-soft:#DCE2E8;
+  --amber:#955B00; --blue:#1C5FAE; --red:#B92F43; --violet:#6247AC; --green:#12795A;
+  --hl:rgba(255,176,56,.38); --btn:#DFE5EB; --btn-hover:#D3DAE2; --btn-ink:#141C27; --focus:#1C5FAE;
+  --stage:#0C1015; --stage-rule:#1D252F; --stage-text:#C3CCD7;
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0F1318; --surface:#151A21; --ink:#E1E6EC; --muted:#98A3B1; --rule:#28303B; --rule-soft:#1F262E;
+    --amber:#FFB547; --blue:#6CB2FF; --red:#FF808D; --violet:#BDA6FF; --green:#5FD6AC;
+    --hl:rgba(255,176,56,.24); --btn:#1E252E; --btn-hover:#27303B; --btn-ink:#E1E6EC; --focus:#6CB2FF;
+    --stage:#090C10; --stage-rule:#222B36;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0F1318; --surface:#151A21; --ink:#E1E6EC; --muted:#98A3B1; --rule:#28303B; --rule-soft:#1F262E;
+  --amber:#FFB547; --blue:#6CB2FF; --red:#FF808D; --violet:#BDA6FF; --green:#5FD6AC;
+  --hl:rgba(255,176,56,.24); --btn:#1E252E; --btn-hover:#27303B; --btn-ink:#E1E6EC; --focus:#6CB2FF;
+  --stage:#090C10; --stage-rule:#222B36;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.78;}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:clamp(16px,4vw,44px);padding-block:44px 88px;}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;text-transform:uppercase}
+h1,h2{font-family:var(--serif);text-wrap:balance;margin:0;word-break:keep-all;overflow-wrap:break-word}
+h1{font-weight:900;font-size:clamp(38px,6.4vw,68px);line-height:1.1;letter-spacing:.01em}
+h2{font-weight:600;font-size:clamp(23px,2.7vw,30px);line-height:1.3;margin-bottom:14px}
+p{margin:0 0 14px}
+.dek{max-width:62ch;color:var(--muted);font-size:17px;margin-top:16px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:22px;padding:0;list-style:none;font-size:14px}
+.toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule)}
+.toc a:hover{border-bottom-color:var(--ink)}
+.toc span{font-family:var(--mono);color:var(--muted);margin-right:4px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.key{font-weight:700;font-size:17px;line-height:1.7;margin:18px 0}
+.key span{background:linear-gradient(transparent 58%,var(--hl) 58%);box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.muted{color:var(--muted)}
+.eq{overflow-x:auto;overflow-y:hidden;margin:4px 0 14px;padding:2px 0}
+mjx-container[jax="SVG"][display="true"]{margin:.4em 0 !important;max-width:100%;overflow-x:auto;overflow-y:hidden}
+mjx-container[jax="SVG"]{color:inherit}
+dl.defs{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:6px 0 16px;font-size:15px}
+dl.defs dt{font-family:var(--mono);color:var(--muted);font-size:13px;padding-top:3px}
+dl.defs dd{margin:0}
+ul.plain{margin:0 0 14px;padding-left:1.1em}
+ul.plain li{margin-bottom:6px}
+
+.hero{margin-top:34px}
+.chap{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;padding-top:64px;margin-top:64px;border-top:1px solid var(--rule)}
+@media (min-width:980px){
+  .chap{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:44px;align-items:start}
+  .chap .text{max-width:60ch}
+}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px}
+.stackv{display:grid;gap:12px}
+
+figure.stage{margin:0;background:var(--stage);border:1px solid var(--stage-rule);border-radius:6px;overflow:hidden}
+figure.stage canvas{display:block;width:100%;height:auto;aspect-ratio:4/3;-webkit-user-select:none;user-select:none}
+figure.stage canvas.wide{aspect-ratio:16/9}
+@media (max-width:640px){figure.stage canvas.wide{aspect-ratio:1/1}}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;padding:8px 12px 9px;font-size:12px;line-height:1.5;color:var(--stage-text);border-top:1px solid var(--stage-rule);margin:0}
+.legend i{display:inline-block;width:20px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px;position:relative;top:-1px}
+.legend i.dash{border-top-style:dashed}
+.legend i.dot{border-top-style:dotted;border-top-width:3px}
+.legend i.band{height:8px;border:0;border-radius:2px;top:0}
+.legend .cap{color:#8793a2}
+
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px 22px;padding:14px 2px 2px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:2px}
+.ctl output{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--amber);margin:4px 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:12px}
+button.b{font:500 13px/1 var(--sans);color:var(--btn-ink);background:var(--btn);border:1px solid var(--rule);border-radius:4px;padding:8px 12px;cursor:pointer}
+button.b:hover{background:var(--btn-hover)}
+button.b[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+label.chk{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+label.chk input{accent-color:var(--amber);margin:0}
+
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px 18px;margin-top:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--rule-soft);border-radius:4px;font-size:13px}
+.readout div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.readout b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums;color:var(--ink)}
+.readout span{color:var(--muted)}
+.pill{display:inline-block;font:500 12px/1 var(--sans);padding:4px 8px;border-radius:99px;border:1px solid var(--rule)}
+.pill.on{background:var(--hl);border-color:transparent;color:var(--ink)}
+
+ol.steps{list-style:none;padding:0;margin:0 0 14px;counter-reset:st -1}
+ol.steps li{position:relative;padding:4px 0 4px 34px;color:var(--muted);transition:color .25s}
+ol.steps li::before{counter-increment:st;content:counter(st,decimal);position:absolute;left:0;top:10px;width:22px;height:22px;border-radius:50%;border:1px solid var(--rule);font:500 12px/20px var(--mono);text-align:center;color:var(--muted)}
+ol.steps li.on{color:var(--ink)}
+ol.steps li.on::before{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+ol.steps .t{font-size:14px;font-weight:500}
+
+.delta{margin-top:72px;padding-top:44px;border-top:1px solid var(--rule)}
+.delta ol{margin:0;padding-left:1.4em;max-width:78ch}
+.delta li{margin-bottom:10px}
+.foot{margin-top:40px;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){ol.steps li{transition:none}}
+</style>
+<script>
+window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["$$","$$"]]},svg:{fontCache:"global"},options:{enableMenu:false}};
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">几何光学 · 同心圆划痕的高光</p>
+  <h1>划痕里的双曲线</h1>
+  <p class="dek">平行光照在布满同心圆划痕的金属盘上，亮起来的不是整张盘，而是一条细线。本页从一根划痕的反射规律出发，一步步推到视频里的沟槽方程、h→∞ 的双曲线和 y = 1/x。所有图形都按公式实时计算。</p>
+  <ul class="toc">
+    <li><a href="#s1"><span>§1</span>反射锥</a></li>
+    <li><a href="#s2"><span>§2</span>亮点条件</a></li>
+    <li><a href="#s3"><span>§3</span>沟槽方程与假分支</a></li>
+    <li><a href="#s4"><span>§4</span>h² 为何相消</a></li>
+    <li><a href="#s5"><span>§5</span>化成 y = 1/x</a></li>
+    <li><a href="#s6"><span>§6</span>像直径</a></li>
+    <li><a href="#s7"><span>§7</span>新增与修正</a></li>
+  </ul>
+</header>
+
+<section class="hero" aria-label="现象">
+  <figure class="stage">
+    <canvas id="cv-hero" class="wide" role="img" aria-label="俯视图：同心圆划痕金属盘上的一条亮线，穿过圆心 C 和镜面反射点 O"></canvas>
+    <figcaption class="legend">
+      <span><i class="band" style="background:linear-gradient(90deg,#3a2a10,#ffd08a,#3a2a10)"></i>亮带（逐像素判断反射条件）</span>
+      <span><i class="dash" style="border-color:#ffb547"></i>当前 h 的精确曲线</span>
+      <span><i class="dash" style="border-color:#ff6b7a"></i>h→∞ 的双曲线</span>
+      <span class="cap">俯视。拖动圆心 C。</span>
+    </figcaption>
+  </figure>
+  <div class="controls">
+    <div class="ctl"><label for="hero-i">入射角 i <output id="hero-i-o"></output></label><input id="hero-i" type="range" min="10" max="70" step="1" value="35"></div>
+    <div class="ctl"><label for="hero-h">眼睛高度 h / R <output id="hero-h-o"></output></label><input id="hero-h" type="range" min="0" max="1000" step="1" value="266"></div>
+    <div class="ctl"><label for="hero-d">划痕散射角 δ <output id="hero-d-o"></output></label><input id="hero-d" type="range" min="0" max="1000" step="1" value="126"></div>
+  </div>
+  <div class="btns">
+    <button class="b" id="hero-auto" type="button" aria-pressed="true">自动移动圆心</button>
+    <label class="chk"><input type="checkbox" id="hero-curves">叠加理论曲线</label>
+  </div>
+  <p class="key" style="max-width:70ch"><span>亮线永远经过两个固定点：圆心 C，以及光源在盘面上的镜面反射点 O。</span></p>
+  <p class="muted" style="max-width:70ch">拖动 C，亮线跟着转，但始终穿过这两点。把 h 调大，亮带会变宽；把 δ 调小，亮带会变细。原因分别在 §2 和 §4。</p>
+</section>
+
+<!-- §1 -->
+<section class="chap" id="s1">
+  <div class="text">
+    <p class="eyebrow">§1 · 反射锥</p>
+    <h2>一根划痕<wbr>只把光反射到<wbr>一个圆锥上</h2>
+    <p>划痕的截面近似一段圆柱面，面上每一点的法向 \(\hat n\) 都垂直于槽的方向 \(\hat s\)。代入镜面反射公式：</p>
+    <div class="eq">$$\hat r=\hat d-2(\hat d\cdot\hat n)\,\hat n,\qquad \hat n\perp\hat s\ \Longrightarrow\ \hat r\cdot\hat s=\hat d\cdot\hat s$$</div>
+    <p class="key"><span>反射只改变垂直于槽的分量，沿槽的分量原样保留。</span></p>
+    <p>弧形槽底把垂直分量散成一个扇面（左图）。沿槽分量固定为 \(\cos\beta\)（右图）。两者合起来，出射光铺满一个以槽为轴、半顶角为 \(\beta\) 的圆锥。几何衍射里棱边的 Keller 锥是同一个几何关系。</p>
+    <p>所以某点的划痕在眼睛里发亮，当且仅当眼睛方向 \(\hat r\) 落在这个圆锥上：</p>
+    <div class="eq">$$\hat d\cdot\hat s=\hat r\cdot\hat s$$</div>
+    <p class="key"><span>一个方程、两个未知数 (x, y)：亮点在盘面上连成一条曲线，而不是一片区域。</span></p>
+  </div>
+  <div>
+    <div class="panels">
+      <figure class="stage">
+        <canvas id="cv-sec" role="img" aria-label="槽的截面：平行光打在弧形槽底，被反射成扇面"></canvas>
+        <figcaption class="legend"><span class="cap">沿槽看（截面）：垂直分量被散成扇面</span></figcaption>
+      </figure>
+      <figure class="stage">
+        <canvas id="cv-cone" role="img" aria-label="侧视：入射光与槽轴夹角 β，出射光构成半顶角 β 的圆锥"></canvas>
+        <figcaption class="legend"><span class="cap">侧面看：每条出射光在轴上的投影都相同</span></figcaption>
+      </figure>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="cone-b">入射光与槽的夹角 β <output id="cone-b-o"></output></label><input id="cone-b" type="range" min="15" max="80" step="1" value="50"></div>
+    </div>
+  </div>
+</section>
+
+<!-- §2 -->
+<section class="chap" id="s2">
+  <div class="text">
+    <p class="eyebrow">§2 · 坐标设定 · 视频约 8:40–9:05</p>
+    <h2>亮点条件：<wbr>两个投影的垂足重合</h2>
+    <dl class="defs">
+      <dt>盘面</dt><dd>z = 0；槽的圆心 C(u, v)；盘上一点 Q(x, y, 0)</dd>
+      <dt>原点 O</dt><dd>光源的镜面反射点</dd>
+      <dt>入射</dt><dd>\(\hat d=(0,\,-\sin i,\,-\cos i)\)</dd>
+      <dt>眼睛</dt><dd>\(E=(0,\,-h\tan i,\,h)\)，正好在 O 的镜面反射光线上</dd>
+      <dt>槽方向</dt><dd>\(\vec s=(y-v,\;u-x,\;0)\)，同心圆的切向</dd>
+    </dl>
+    <p>\(\vec s\) 没有 z 分量，所以条件 \(\hat d\cdot\hat s=\hat r\cdot\hat s\) 只和水平分量有关。把 \(\hat d\)、\(\hat r\) 的水平投影分别投到槽方向上，两个垂足重合，Q 就亮。可以拖动右图中的 Q 试试。</p>
+    <p class="key"><span>有两处永远满足条件。O 点：\(\hat r\) 恰好是 \(\hat d\) 的镜像，对任何方向的槽都成立。C 点：\(\vec s=0\)。所以亮线对任何 h、i 都经过 O 和 C。</span></p>
+    <p>让 Q 沿同一圈划痕移动，条件一般只在两个点成立。每一圈只亮两个点，这些点连起来就是亮线。</p>
+  </div>
+  <div>
+    <div class="panels">
+      <figure class="stage">
+        <canvas id="cv-side" role="img" aria-label="侧视图：平行光以入射角 i 照到盘面，O 点的反射光到达眼睛 E"></canvas>
+        <figcaption class="legend"><span><i style="border-color:#ffb547"></i>入射光</span><span><i style="border-color:#5aa7ff"></i>到眼睛</span><span class="cap">侧视（y–z 平面）</span></figcaption>
+      </figure>
+      <figure class="stage">
+        <canvas id="cv-probe" role="img" aria-label="俯视图：可拖动的点 Q，其槽方向，以及入射和出射方向的水平投影"></canvas>
+        <figcaption class="legend"><span><i style="border-color:#4fd1a5"></i>槽方向 ŝ</span><span><i style="border-color:#ffb547"></i>d̂ 水平投影</span><span><i style="border-color:#5aa7ff"></i>r̂ 水平投影</span><span class="cap">拖动 Q</span></figcaption>
+      </figure>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="p-i">入射角 i <output id="p-i-o"></output></label><input id="p-i" type="range" min="15" max="70" step="1" value="35"></div>
+      <div class="ctl"><label for="p-h">眼睛高度 h / R <output id="p-h-o"></output></label><input id="p-h" type="range" min="0" max="1000" step="1" value="472"></div>
+    </div>
+    <div class="btns">
+      <button class="b" id="p-seek" type="button">沿这一圈找亮点</button>
+      <button class="b" id="p-locus" type="button" aria-pressed="false">显示全部亮点</button>
+    </div>
+    <div class="readout" aria-live="polite">
+      <div><span>d̂·ŝ</span><b id="p-ds"></b></div>
+      <div><span>r̂·ŝ</span><b id="p-rs"></b></div>
+      <div><span>差值</span><b id="p-df"></b></div>
+      <div><span>状态</span><em class="pill" id="p-st" style="font-style:normal"></em></div>
+    </div>
+  </div>
+</section>
+
+<!-- §3 -->
+<section class="chap" id="s3">
+  <div class="text">
+    <p class="eyebrow">§3 · 沟槽方程 · 视频 9:02–9:07、12:22–12:37</p>
+    <h2>四次曲线，<wbr>以及平方混进来的<wbr>假分支</h2>
+    <p>代入后得到视频屏幕上的方程（分子已合并）：</p>
+    <div class="eq">$$\frac{(xv-yu)+h\tan i\,(x-u)}{\sqrt{x^2+h^2+(y+h\tan i)^2}}=(x-u)\sin i$$</div>
+    <p>两边平方，得到 x、y 的四次曲线。展开后 \(h^2\) 项相消，方程对 h 只剩一次：</p>
+    <div class="eq">$$h=\frac{(x-u)^2\sin^2 i\,(x^2+y^2)-(xv-yu)^2}{2(x-u)\tan i\,\big[(xv-yu)-(x-u)\,y\sin^2 i\big]}$$</div>
+    <p>h→∞ 要求分母趋于 0，得到两个因子。平方的同时，也把 \(\hat d\cdot\vec s=-\hat r\cdot\vec s\) 并了进来。这等于沿槽分量反号，不对应任何真实反射。图中紫色虚线就是这一支，它在大 h 下贴向竖线 x = u：</p>
+    <div class="eq">$$x-u\approx-\frac{u\,(v-y)}{2h\tan i}$$</div>
+    <p class="key"><span>分母的两个因子各有来处：方括号 = 0 是真分支的极限，即双曲线；x − u = 0 是假分支的极限。</span></p>
+    <p>“x = u 代回原式只剩圆心”，这句话只对未平方的方程成立。平方后的方程在有限 h 下确实有一整支曲线贴着 x = u。模拟器如果直接画平方后的方程，就会把这一支也画出来。</p>
+  </div>
+  <div>
+    <figure class="stage">
+      <canvas id="cv-locus" role="img" aria-label="俯视图：真分支、假分支和极限双曲线随 h 变化"></canvas>
+      <figcaption class="legend">
+        <span><i style="border-color:#ffb547;border-top-width:3px"></i>真分支 d̂·s = r̂·s</span>
+        <span><i class="dash" style="border-color:#b69cff"></i>假分支 d̂·s = −r̂·s</span>
+        <span><i class="dash" style="border-color:#ff6b7a"></i>h→∞ 双曲线</span>
+        <span><i class="dot" style="border-color:#b69cff"></i>x = u</span>
+      </figcaption>
+    </figure>
+    <div class="controls">
+      <div class="ctl"><label for="l-h">眼睛高度 h / R <output id="l-h-o"></output></label><input id="l-h" type="range" min="0" max="1000" step="1" value="159"></div>
+      <div class="ctl"><label for="l-i">入射角 i <output id="l-i-o"></output></label><input id="l-i" type="range" min="15" max="70" step="1" value="35"></div>
+    </div>
+    <div class="btns">
+      <button class="b" id="l-play" type="button">播放 h: 1 → 1000</button>
+      <label class="chk"><input type="checkbox" id="l-spur" checked>假分支</label>
+      <label class="chk"><input type="checkbox" id="l-lim" checked>极限曲线</label>
+    </div>
+    <div class="readout">
+      <div><span>假分支离 x = u 的最大偏移（盘内）</span><b id="l-off"></b></div>
+      <div><span>双曲线中心 K</span><b id="l-k"></b></div>
+    </div>
+  </div>
+</section>
+
+<!-- §4 -->
+<section class="chap" id="s4">
+  <div class="text">
+    <p class="eyebrow">§4 · 为什么 h² 必然相消</p>
+    <h2>零阶项恒为零，<wbr>曲线由 1/h 阶决定</h2>
+    <p>眼睛越远，从盘上各点看眼睛的方向越接近同一个方向 \(\hat r_0\)，也就是 O 点的镜面反射方向：</p>
+    <div class="eq">$$\hat r=\hat r_0+O\!\left(\tfrac{R}{h}\right),\qquad \hat r_0=(0,\,-\sin i,\,\cos i)$$</div>
+    <p>\(\hat d\) 与 \(\hat r_0\) 只差 z 分量，而 \(\vec s\) 没有 z 分量：</p>
+    <div class="eq">$$(\hat d-\hat r_0)\cdot\vec s=(0,\,0,\,-2\cos i)\cdot(s_x,\,s_y,\,0)=0$$</div>
+    <p>于是 \(f=\hat d\cdot\hat s-\hat r\cdot\hat s=g(Q)/h+O(1/h^2)\)。零阶对所有点自动成立，平方后两边的 \(h^2\) 系数必然相同。左边与右边分别是：</p>
+    <div class="eq">$$\begin{aligned}&(x-u)^2\tan^2 i\\ &(x-u)^2\sin^2 i\,(1+\tan^2 i)=(x-u)^2\tan^2 i\end{aligned}$$</div>
+    <p>真正决定曲线的是 \(g(Q)=0\)，也就是 §5 的双曲线。</p>
+    <p>同一事实还有一个物理后果：f 在整张盘上按 1/h 缩小，右图中是斜率 −1 的直线。真实划痕有散射角 δ，亮的条件是 \(|f|\lesssim\delta\)，所以亮带宽度大约正比于 \(\delta h\)。</p>
+    <p>圆心附近的亮带会张成楔形。那里 \(f\approx(\hat d-\hat r_C)\cdot\hat s\) 只取决于方位角，楔形的半张角约为 \(\delta/|(\hat d-\hat r_C)_{xy}|\)（下标 xy 指水平分量），h 越大，楔形越宽。</p>
+    <p class="key"><span>双曲线只在 R ≪ h ≪ R/δ 的中间区间看得到。h 太小，曲线偏离双曲线；h 太大，整张盘都亮，条纹消失。</span></p>
+  </div>
+  <div>
+    <div class="stackv">
+      <figure class="stage">
+        <canvas id="cv-rays" role="img" aria-label="侧视：盘上各点指向眼睛的方向随 h 增大趋于平行"></canvas>
+        <figcaption class="legend"><span><i style="border-color:#5aa7ff"></i>Q → E 实际方向</span><span><i class="dash" style="border-color:#9aa6b4"></i>r̂₀（h→∞）</span><span class="cap">侧视</span></figcaption>
+      </figure>
+      <figure class="stage">
+        <canvas id="cv-plot" role="img" aria-label="双对数图：盘内最大失配随 h 以斜率 −1 下降，与散射角 δ 的交点处整盘变亮"></canvas>
+        <figcaption class="legend"><span><i style="border-color:#ffb547"></i>盘内 max |f|</span><span><i class="dash" style="border-color:#8793a2"></i>斜率 −1</span><span><i style="border-color:#5aa7ff"></i>散射角 δ</span></figcaption>
+      </figure>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="c-h">眼睛高度 h / R <output id="c-h-o"></output></label><input id="c-h" type="range" min="0" max="1000" step="1" value="133"></div>
+      <div class="ctl"><label for="c-d">划痕散射角 δ <output id="c-d-o"></output></label><input id="c-d" type="range" min="0" max="1000" step="1" value="578"></div>
+    </div>
+    <div class="readout">
+      <div><span>盘内最大偏角 ∠(r̂, r̂₀)</span><b id="c-ang"></b></div>
+      <div><span>整盘变亮的高度 h*</span><b id="c-hs"></b></div>
+    </div>
+  </div>
+</section>
+
+<!-- §5 -->
+<section class="chap" id="s5">
+  <div class="text">
+    <p class="eyebrow">§5 · 标准化 · 视频 12:25–12:34</p>
+    <h2>平移、缩放、翻转，<wbr>得到 y = 1/x</h2>
+    <ol class="steps" id="n-steps">
+      <li class="on"><span class="t">原式</span><div class="eq">$$xy-\frac{v}{\sin^2 i}\,x+\frac{u}{\tan^2 i}\,y=0$$</div></li>
+      <li><span class="t">平移：配方，把中心 K 移到原点</span><div class="eq">$$\Big(x+\frac{u}{\tan^2 i}\Big)\Big(y-\frac{v}{\sin^2 i}\Big)=-\frac{uv\cos^2 i}{\sin^4 i}$$</div></li>
+      <li><span class="t">缩放：右边等于 \(-\operatorname{sgn}(uv)\,k^2\)</span><div class="eq">$$k=\frac{\sqrt{|uv|}\,\cos i}{\sin^2 i}$$</div></li>
+      <li><span class="t">翻转：uv &gt; 0 时 y 轴反向</span><div class="eq">$$\begin{aligned}x'&=\frac{x+u/\tan^2 i}{k}\\ y'&=\operatorname{sgn}(-uv)\,\frac{y-v/\sin^2 i}{k}\end{aligned}\ \Longrightarrow\ x'y'=1$$</div></li>
+    </ol>
+    <p>核对：C(u, v) 代入得 \(uv\,\big(1-\tfrac{1}{\sin^2 i}+\tfrac{\cos^2 i}{\sin^2 i}\big)=0\)；O(0, 0) 显然也在曲线上。</p>
+    <p>O 和 C 还在同一支上：</p>
+    <div class="eq">$$\begin{aligned}O-K&=\frac{(u\cos^2 i,\ -v)}{\sin^2 i}\\ C-K&=\frac{(u,\ -v\cos^2 i)}{\sin^2 i}\end{aligned}$$</div>
+    <p>两者各分量同号，落在同一象限。标准化后，O 位于 \(x'=\operatorname{sgn}(u)\sqrt{|u/v|}\,\cos i\)，C 位于 \(x'=\operatorname{sgn}(u)\sqrt{|u/v|}\,/\cos i\)。</p>
+    <p class="key"><span>盘上看到的亮线，就是 y = 1/x 其中一支上，从 O 经过 C 的那一段及其延伸。</span></p>
+  </div>
+  <div>
+    <figure class="stage">
+      <canvas id="cv-norm" role="img" aria-label="双曲线经平移、缩放、翻转变为 y=1/x 的动画"></canvas>
+      <figcaption class="legend"><span><i style="border-color:#ff6b7a;border-top-width:3px"></i>双曲线</span><span><i class="dash" style="border-color:#ff6b7a"></i>渐近线</span><span><i class="dash" style="border-color:#eef2f6"></i>y = 1/x（参照）</span></figcaption>
+    </figure>
+    <div class="btns">
+      <button class="b" type="button" data-step="0" aria-pressed="true">原式</button>
+      <button class="b" type="button" data-step="1" aria-pressed="false">① 平移</button>
+      <button class="b" type="button" data-step="2" aria-pressed="false">② 缩放</button>
+      <button class="b" type="button" data-step="3" aria-pressed="false">③ 翻转</button>
+      <button class="b" type="button" id="n-play">连续播放</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="n-u">u / R <output id="n-u-o"></output></label><input id="n-u" type="range" min="-80" max="80" step="1" value="40"></div>
+      <div class="ctl"><label for="n-v">v / R <output id="n-v-o"></output></label><input id="n-v" type="range" min="-80" max="80" step="1" value="30"></div>
+      <div class="ctl"><label for="n-i">入射角 i <output id="n-i-o"></output></label><input id="n-i" type="range" min="30" max="60" step="1" value="40"></div>
+    </div>
+    <div class="readout">
+      <div><span>中心 K</span><b id="n-k"></b></div>
+      <div><span>缩放 k</span><b id="n-kk"></b></div>
+      <div><span>sgn(−uv)</span><b id="n-sg"></b></div>
+      <div><span>O′ , C′ 的 x′</span><b id="n-oc"></b></div>
+    </div>
+  </div>
+</section>
+
+<!-- §6 -->
+<section class="chap" id="s6">
+  <div class="text">
+    <p class="eyebrow">§6 · 两个极限 · 视频 9:47</p>
+    <h2>小入射角时像直径，<wbr>掠射时折成直角</h2>
+    <p>把双曲线方程乘以 \(\sin^2 i\)：</p>
+    <div class="eq">$$\sin^2 i\;xy-vx+u\cos^2 i\;y=0$$</div>
+    <dl class="defs">
+      <dt>i → 0</dt><dd>\(vx=uy\)，即直线 OC。中心 K 跑到无穷远，双曲线的一支被拉直。亮线成为一条真正的直径，方向指向光源的镜面反射点 O。</dd>
+      <dt>i → 90°</dt><dd>\(x\,(y-v)=0\)。K 趋于 (0, v)，亮线折成两段：沿入射面的 x = 0，以及过圆心的 y = v。</dd>
+      <dt>u = 0</dt><dd>\(x\,(y-v/\sin^2 i)=0\)。圆心在入射面内，也就是正对着看。</dd>
+      <dt>v = 0</dt><dd>\(y\,(x+u/\tan^2 i)=0\)。</dd>
+    </dl>
+    <p>u = 0 或 v = 0 时双曲线退化为两条直线，其中过 O、C 的那条对任何 i 都是直径。</p>
+    <p class="key"><span>视频说“像直径”，准确的说法是：亮线是双曲线过 O、C 的那一支。i→0 时它变成直线 OC，i→90° 时变成直角折线。</span></p>
+  </div>
+  <div>
+    <figure class="stage">
+      <canvas id="cv-diam" role="img" aria-label="俯视图：入射角从 0 扫到 90 度时，亮线从直线 OC 变为直角折线"></canvas>
+      <figcaption class="legend">
+        <span><i style="border-color:#ffb547;border-top-width:3px"></i>盘内亮线</span>
+        <span><i class="dash" style="border-color:#ff6b7a"></i>双曲线其余部分</span>
+        <span><i class="dot" style="border-color:#eef2f6"></i>i→0：直线 OC</span>
+        <span><i class="dot" style="border-color:#4fd1a5"></i>i→90°：折线</span>
+      </figcaption>
+    </figure>
+    <div class="controls">
+      <div class="ctl"><label for="d-i">入射角 i <output id="d-i-o"></output></label><input id="d-i" type="range" min="3" max="87" step="1" value="30"></div>
+    </div>
+    <div class="btns">
+      <button class="b" id="d-auto" type="button" aria-pressed="false">自动扫描 i</button>
+      <button class="b" type="button" data-preset="0">一般位置</button>
+      <button class="b" type="button" data-preset="1">u = 0</button>
+      <button class="b" type="button" data-preset="2">v = 0</button>
+    </div>
+    <div class="readout">
+      <div><span>盘内亮线偏离直线 OC 的最大距离</span><b id="d-dev"></b></div>
+      <div><span>中心 K</span><b id="d-k"></b></div>
+    </div>
+  </div>
+</section>
+
+<section class="delta" id="s7">
+  <p class="eyebrow">§7 · 对照原笔记</p>
+  <h2>本页新增或修正的内容</h2>
+  <ol>
+    <li><b>亮线必过 O，不只在 h→∞ 时。</b>E 取在 O 的镜面反射线上，任意有限 h 下 O 点对所有方向的槽都满足条件。</li>
+    <li><b>因子 x − u 是假分支的极限位置。</b>偏移量 \(x-u\approx-u(v-y)/(2h\tan i)\)，与数值求根一致。“代回只剩圆心”只对未平方的方程成立。</li>
+    <li><b>O、C 在双曲线的同一支上。</b>标准化后两点的横坐标分别是 \(\sqrt{|u/v|}\cos i\) 和 \(\sqrt{|u/v|}/\cos i\)（带 sgn u）。</li>
+    <li><b>i → 90° 的另一端极限。</b>\(x(y-v)=0\)，是一条直角折线，与 i → 0 的直线 OC 相对。</li>
+    <li><b>双曲线的适用区间是 R ≪ h ≪ R/δ。</b>失配 f 整体按 1/h 缩小，眼睛太远反而整盘都亮。</li>
+    <li><b>反射锥的一行证明。</b>\(\hat n\perp\hat s\Rightarrow\hat r\cdot\hat s=\hat d\cdot\hat s\)。视频直接用了这个结论，没有推导。</li>
+  </ol>
+  <p class="foot">符号验算（sympy）：h² 系数恒为 0；h¹ 系数等于 \(2\tan i\,(x-u)\big[(xv-yu)-(x-u)y\sin^2 i\big]\)；配方恒等式与圆心代入均化简为 0。数值验算：h = 20、100、1000 时，真分支到双曲线的最大距离约为 0.11、0.085、0.008，假分支到 x = u 的偏移按 1/h 缩小。</p>
+</section>
+
+</div>
+
+<script>
+(()=>{
+"use strict";
+const DEG=Math.PI/180, TAU=Math.PI*2;
+const RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+const P={bg:"#0c1015",disk:"#121820",grid:"rgba(180,196,216,0.07)",axis:"rgba(180,196,216,0.32)",text:"#c3ccd7",dim:"#7f8b9a",
+  light:"#ffb547",eye:"#5aa7ff",tan:"#4fd1a5",hyp:"#ff6b7a",spur:"#b69cff",white:"#eef2f6",steel:"#2a323d"};
+const FONT='12px "Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+const MONO='12px "IBM Plex Mono",ui-monospace,Menlo,monospace';
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), lerp=(a,b,t)=>a+(b-a)*t;
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const fm=(x,d=3)=>{if(!isFinite(x))return "∞";const s=Math.abs(x).toFixed(d);return (x<0&&+s!==0?"−":"")+s;};
+const hash=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const logMap=(val,a,b)=>a*Math.pow(b/a,val/1000);
+const fmtH=h=>h>=100?h.toFixed(0):h>=10?h.toFixed(1):h.toFixed(2);
+
+/* ---------- stage infrastructure ---------- */
+const stages=[];
+function Stage(canvas,draw){
+  const st={canvas,ctx:canvas.getContext("2d"),w:0,h:0,dpr:1,draw,visible:true,need:true,tick:null,view:null};
+  const fit=()=>{const r=canvas.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2);
+    const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
+    if(w===st.w&&h===st.h&&dpr===st.dpr)return;st.w=w;st.h=h;st.dpr=dpr;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);st.need=true;};
+  if(window.ResizeObserver)new ResizeObserver(fit).observe(canvas);else window.addEventListener("resize",fit);
+  fit();
+  if(window.IntersectionObserver)new IntersectionObserver(es=>{for(const e of es)st.visible=e.isIntersecting;},{rootMargin:"120px"}).observe(canvas);
+  st.req=()=>{st.need=true;};
+  stages.push(st);return st;
+}
+let lastT=performance.now();
+function frame(t){
+  const dt=Math.min(0.05,Math.max(0,(t-lastT)/1000));lastT=t;
+  for(const st of stages){
+    if(!st.visible)continue;
+    if(st.tick&&st.tick(dt))st.need=true;
+    if(st.need&&st.w>1){st.need=false;const c=st.ctx;c.setTransform(st.dpr,0,0,st.dpr,0,0);
+      c.fillStyle=P.bg;c.fillRect(0,0,st.w,st.h);st.draw(st,c);}
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>stages.forEach(s=>s.need=true));
+
+function View(st,cx,cy,span){
+  const s=Math.min(st.w,st.h)/span;
+  return {s,cx,cy,X:x=>st.w/2+(x-cx)*s,Y:y=>st.h/2-(y-cy)*s,
+    inv:(px,py)=>[cx+(px-st.w/2)/s,cy-(py-st.h/2)/s],
+    x0:cx-st.w/2/s,x1:cx+st.w/2/s,y0:cy-st.h/2/s,y1:cy+st.h/2/s};
+}
+function FitView(st,xmin,xmax,ymin,ymax,pad=14){
+  const s=Math.min((st.w-2*pad)/(xmax-xmin),(st.h-2*pad)/(ymax-ymin));
+  const cx=(xmin+xmax)/2,cy=(ymin+ymax)/2;
+  return {s,cx,cy,X:x=>st.w/2+(x-cx)*s,Y:y=>st.h/2-(y-cy)*s,inv:(px,py)=>[cx+(px-st.w/2)/s,cy-(py-st.h/2)/s],
+    x0:cx-st.w/2/s,x1:cx+st.w/2/s,y0:cy-st.h/2/s,y1:cy+st.h/2/s};
+}
+
+/* ---------- drawing helpers ---------- */
+function line(c,x0,y0,x1,y1,col,w=1,dash){c.strokeStyle=col;c.lineWidth=w;c.setLineDash(dash||[]);c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();c.setLineDash([]);}
+function arrow(c,x0,y0,x1,y1,col,w=1.6,hd=7){line(c,x0,y0,x1,y1,col,w);const a=Math.atan2(y1-y0,x1-x0);
+  c.fillStyle=col;c.beginPath();c.moveTo(x1,y1);c.lineTo(x1-hd*Math.cos(a-.42),y1-hd*Math.sin(a-.42));c.lineTo(x1-hd*Math.cos(a+.42),y1-hd*Math.sin(a+.42));c.closePath();c.fill();}
+function dot(c,x,y,r,col){c.fillStyle=col;c.beginPath();c.arc(x,y,r,0,TAU);c.fill();}
+function circ(c,x,y,r,col,w=1.4,dash){c.strokeStyle=col;c.lineWidth=w;c.setLineDash(dash||[]);c.beginPath();c.arc(x,y,Math.max(0,r),0,TAU);c.stroke();c.setLineDash([]);}
+function label(c,s,x,y,col=P.text,align="left",font=FONT,base="middle"){
+  c.font=font;c.textAlign=align;c.textBaseline=base;c.lineJoin="round";
+  c.lineWidth=3.5;c.strokeStyle="rgba(10,13,18,0.88)";c.strokeText(s,x,y);c.fillStyle=col;c.fillText(s,x,y);}
+function markO(c,V,x=0,y=0,lab="O"){const X=V.X(x),Y=V.Y(y);circ(c,X,Y,5,P.white,1.6);label(c,lab,X+9,Y+11,P.white);}
+function markC(c,V,x,y,lab="C",handle){const X=V.X(x),Y=V.Y(y);
+  if(handle)circ(c,X,Y,11,"rgba(238,242,246,0.35)",1,[3,3]);
+  line(c,X-5,Y,X+5,Y,P.white,1.6);line(c,X,Y-5,X,Y+5,P.white,1.6);label(c,lab,X+9,Y-11,P.white);}
+function markK(c,V,x,y){const X=V.X(x),Y=V.Y(y);if(X<-20||X>V.X(V.x1)+20||Y<-20||Y>V.Y(V.y0)+20)return;
+  line(c,X-4,Y-4,X+4,Y+4,P.hyp,1.5);line(c,X-4,Y+4,X+4,Y-4,P.hyp,1.5);label(c,"K",X+8,Y-10,P.hyp);}
+function drawSegs(c,V,segs,col,w,dash,alpha=1){
+  c.save();c.globalAlpha=alpha;c.strokeStyle=col;c.lineWidth=w;c.lineCap="round";c.setLineDash(dash||[]);c.beginPath();
+  for(let k=0;k<segs.length;k+=4){c.moveTo(V.X(segs[k]),V.Y(segs[k+1]));c.lineTo(V.X(segs[k+2]),V.Y(segs[k+3]));}
+  c.stroke();c.restore();}
+function grooves(c,V,u,v,R,step=0.1,alpha=0.12){
+  const X=V.X(u),Y=V.Y(v);c.fillStyle=P.disk;c.beginPath();c.arc(X,Y,R*V.s,0,TAU);c.fill();
+  c.strokeStyle=`rgba(190,204,222,${alpha})`;c.lineWidth=1;c.beginPath();
+  for(let r=step;r<R-1e-6;r+=step){c.moveTo(X+r*V.s,Y);c.arc(X,Y,r*V.s,0,TAU);}c.stroke();
+  circ(c,X,Y,R*V.s,"rgba(200,212,228,0.5)",1.2);}
+function edgeLabels(c,st){label(c,"↓ 光从这一侧射入（+y）",st.w/2,13,P.dim,"center");label(c,"眼睛在这一侧上方（−y）",st.w/2,st.h-13,P.dim,"center");}
+
+/* ---------- physics ---------- */
+// unit-s version: returns d·ŝ − sign·r̂·ŝ ; also exported pieces
+function terms(x,y,u,v,h,sI,tI){
+  let sx=y-v,sy=u-x;const n=Math.hypot(sx,sy);if(n<1e-12)return [0,0];sx/=n;sy/=n;
+  const ds=-sI*sy;const ex=-x,ey=-h*tI-y,ez=h;const en=Math.sqrt(ex*ex+ey*ey+ez*ez);
+  return [ds,(ex*sx+ey*sy)/en];}
+// raw (unnormalised s) — continuous everywhere, zero set = locus plus C
+function Fraw(x,y,u,v,h,sI,tI,sign){const sx=y-v,sy=u-x;const ds=-sI*sy;const ex=-x,ey=-h*tI-y;
+  const en=Math.sqrt(ex*ex+ey*ey+h*h);return ds-sign*(ex*sx+ey*sy)/en;}
+// hyperbola multiplied by sin^2 i (well conditioned for small i)
+function Hs(x,y,u,v,s2,c2){return s2*x*y-v*x+u*c2*y;}
+
+function contour(fn,x0,x1,y0,y1,nx,ny){
+  const dx=(x1-x0)/nx,dy=(y1-y0)/ny;x0+=0.37*dx*0.013;y0+=0.29*dy*0.017;
+  const W=nx+1,g=new Float64Array(W*(ny+1));
+  for(let j=0;j<=ny;j++){const y=y0+j*dy;for(let i=0;i<=nx;i++)g[j*W+i]=fn(x0+i*dx,y);}
+  const segs=[];
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const a=g[j*W+i],b=g[j*W+i+1],cc=g[(j+1)*W+i+1],d=g[(j+1)*W+i];
+    const pa=a>0,pb=b>0,pc=cc>0,pd=d>0;if(pa===pb&&pb===pc&&pc===pd)continue;
+    const X=x0+i*dx,Y=y0+j*dy,pts=[];
+    if(pa!==pb)pts.push(X+dx*a/(a-b),Y);
+    if(pb!==pc)pts.push(X+dx,Y+dy*b/(b-cc));
+    if(pc!==pd)pts.push(X+dx-dx*cc/(cc-d),Y+dy);
+    if(pd!==pa)pts.push(X,Y+dy-dy*d/(d-a));
+    if(pts.length===4)segs.push(pts[0],pts[1],pts[2],pts[3]);
+    else if(pts.length===8){const m=(a+b+cc+d)/4;
+      if((m>0)===pa)segs.push(pts[0],pts[1],pts[2],pts[3],pts[4],pts[5],pts[6],pts[7]);
+      else segs.push(pts[0],pts[1],pts[6],pts[7],pts[2],pts[3],pts[4],pts[5]);}
+  }
+  return segs;}
+
+/* ---------- interaction helpers ---------- */
+function slider(id,fmt,cb){const el=$("#"+id),out=$("#"+id+"-o");
+  const f=()=>{const val=+el.value;out.textContent=fmt(val);cb(val);};el.addEventListener("input",f);f();
+  return {el,set:(val)=>{el.value=val;out.textContent=fmt(+el.value);}};}
+function dragger(st,targets){
+  let act=null;const cv=st.canvas;
+  const pos=e=>{const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
+  const pick=(px,py)=>{const V=st.view;if(!V)return null;let best=null,bd=24;
+    for(const t of targets){const [x,y]=t.get();const d=Math.hypot(V.X(x)-px,V.Y(y)-py);if(d<bd){bd=d;best=t;}}return best;};
+  cv.addEventListener("touchstart",e=>{const t=e.touches[0];const r=cv.getBoundingClientRect();
+    if(pick(t.clientX-r.left,t.clientY-r.top))e.preventDefault();},{passive:false});
+  cv.addEventListener("pointerdown",e=>{const [px,py]=pos(e);const t=pick(px,py);if(!t)return;
+    act=t;try{cv.setPointerCapture(e.pointerId);}catch(_){}t.start&&t.start();e.preventDefault();cv.style.cursor="grabbing";});
+  cv.addEventListener("pointermove",e=>{const [px,py]=pos(e);
+    if(act){const [x,y]=st.view.inv(px,py);act.set(x,y);st.need=true;}
+    else cv.style.cursor=pick(px,py)?"grab":"";});
+  const end=()=>{if(act){act.end&&act.end();}act=null;cv.style.cursor="";};
+  cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);}
+function toggleBtn(el,init,cb){let on=init;el.setAttribute("aria-pressed",String(on));
+  el.addEventListener("click",()=>{on=!on;el.setAttribute("aria-pressed",String(on));cb(on);});
+  return {set:v=>{on=v;el.setAttribute("aria-pressed",String(v));}};}
+
+/* ================= HERO ================= */
+(function(){
+  const S={u:0.30,v:0.20,R:1.15,i:35*DEG,h:4,delta:0.003,curves:false,auto:!RM,th:0.55,drag:false};
+  const off=document.createElement("canvas"),octx=off.getContext("2d");let img=null;
+  const st=Stage($("#cv-hero"),draw);
+  const view=()=>View(st,0.12,0.02,3.25);
+  let segCache={key:"",f:[],h:[]};
+  function render(V){
+    const q=Math.min(st.dpr,1.25);const N=Math.max(2,Math.min(760,Math.round(st.w*q))),M=Math.max(2,Math.round(N*st.h/st.w));
+    if(off.width!==N||off.height!==M||!img){off.width=N;off.height=M;img=octx.createImageData(N,M);}
+    const d=img.data,sI=Math.sin(S.i),tI=Math.tan(S.i),h=S.h,hT=h*tI,h2=h*h,inv=1/(S.delta*S.delta),R=S.R,R2=R*R,u=S.u,v=S.v;
+    const px=(V.x1-V.x0)/N,py=(V.y1-V.y0)/M;
+    for(let j=0;j<M;j++){const y=V.y1-(j+.5)*py;const ey=-hT-y;
+      for(let k=0;k<N;k++){const x=V.x0+(k+.5)*px;const o=(j*N+k)*4;const dx=x-u,dy=y-v,r2=dx*dx+dy*dy;
+        if(r2>R2){d[o]=12;d[o+1]=16;d[o+2]=21;d[o+3]=255;continue;}
+        const rho=Math.sqrt(r2)+1e-12,sx=dy/rho,sy=-dx/rho;
+        const f=-sI*sy-(-x*sx+ey*sy)/Math.sqrt(x*x+ey*ey+h2);
+        const ri=Math.floor(rho*72),n1=hash(ri),n2=hash(ri+57.3);
+        const I=Math.exp(-f*f*inv),Ib=Math.exp(-f*f*inv*0.03);
+        const edge=rho>R-0.018?0.55:1,base=(22+14*n1)*edge,hl=I*(0.32+0.68*n2)+0.05*Ib;
+        d[o]=base+268*hl;d[o+1]=base*1.04+214*hl;d[o+2]=base*1.14+148*hl;d[o+3]=255;}}
+    octx.putImageData(img,0,0);}
+  function draw(st,c){
+    const V=view();st.view=V;render(V);c.imageSmoothingEnabled=true;c.drawImage(off,0,0,st.w,st.h);
+    circ(c,V.X(S.u),V.Y(S.v),S.R*V.s,"rgba(200,212,228,0.30)",1);
+    if(S.curves){
+      const key=[S.u,S.v,S.i,S.h,st.w,st.h].join();
+      if(segCache.key!==key){const sI=Math.sin(S.i),tI=Math.tan(S.i),s2=sI*sI,c2=1-s2,nx=Math.round(st.w/4),ny=Math.round(st.h/4);
+        segCache={key,f:contour((x,y)=>Fraw(x,y,S.u,S.v,S.h,sI,tI,1),V.x0,V.x1,V.y0,V.y1,nx,ny),
+          h:contour((x,y)=>Hs(x,y,S.u,S.v,s2,c2),V.x0,V.x1,V.y0,V.y1,nx,ny)};}
+      drawSegs(c,V,segCache.h,P.hyp,1.4,[6,5],0.9);drawSegs(c,V,segCache.f,P.light,1.2,[2,4],0.95);}
+    markO(c,V);markC(c,V,S.u,S.v,"C",true);edgeLabels(c,st);}
+  st.tick=dt=>{if(!S.auto||S.drag)return false;S.th+=dt*TAU/20;S.u=0.12+0.36*Math.cos(S.th);S.v=0.02+0.30*Math.sin(S.th);return true;};
+  const auto=toggleBtn($("#hero-auto"),S.auto,on=>{S.auto=on;});
+  dragger(st,[{get:()=>[S.u,S.v],start:()=>{S.drag=true;S.auto=false;auto.set(false);},end:()=>{S.drag=false;},
+    set:(x,y)=>{const r=Math.hypot(x,y),m=0.95;if(r>m){x*=m/r;y*=m/r;}S.u=x;S.v=y;}}]);
+  slider("hero-i",v=>v+"°",v=>{S.i=v*DEG;st.req();});
+  slider("hero-h",v=>fmtH(logMap(v,1.5,60)),v=>{S.h=logMap(v,1.5,60);st.req();});
+  slider("hero-d",v=>(logMap(v,0.002,0.05)/DEG).toFixed(2)+"°",v=>{S.delta=logMap(v,0.002,0.05);st.req();});
+  $("#hero-curves").addEventListener("change",e=>{S.curves=e.target.checked;st.req();});
+})();
+
+/* ================= §1 CONE ================= */
+(function(){
+  const S={beta:50*DEG,t:0};
+  const A=Stage($("#cv-sec"),drawA),B=Stage($("#cv-cone"),drawB);
+  const gam=14*DEG,arcHalf=60*DEG,top=1-Math.cos(arcHalf);
+  // circle centre (0,1) radius 1; trench = lower arc down to y=0, surface at y=top
+  function hitArc(o,dir){const ox=o[0],oy=o[1]-1;const b=ox*dir[0]+oy*dir[1],cc=ox*ox+oy*oy-1,disc=b*b-cc;if(disc<0)return null;
+    const s=Math.sqrt(disc);for(const t of [-b-s,-b+s]){if(t<1e-6)continue;const q=[o[0]+t*dir[0],o[1]+t*dir[1]];
+      if(q[1]<top-1e-9)return {q,n:[-q[0],1-q[1]]};}return null;}
+  const refl=(d,n)=>{const k=2*(d[0]*n[0]+d[1]*n[1]);return [d[0]-k*n[0],d[1]-k*n[1]];};
+  const paths=[],hits=[];
+  (function build(){const p=[-Math.sin(gam),-Math.cos(gam)],n=13,half=Math.sin(arcHalf)*0.93;
+    for(let k=0;k<n;k++){const xk=-half+2*half*k/(n-1);let o=[xk-2.1*p[0],top-2.1*p[1]],dir=p;const pts=[o];
+      for(let b=0;b<3;b++){const H=hitArc(o,dir);if(!H)break;pts.push(H.q);if(b===0)hits.push(H);dir=refl(dir,H.n);o=H.q;}
+      pts.push([o[0]+dir[0]*2.3,o[1]+dir[1]*2.3]);
+      const L=[0];for(let m=1;m<pts.length;m++)L.push(L[m-1]+Math.hypot(pts[m][0]-pts[m-1][0],pts[m][1]-pts[m-1][1]));
+      paths.push({pts,L});}})();
+  const at=(P_,s)=>{const {pts,L}=P_;if(s<=0)return pts[0];for(let m=1;m<pts.length;m++)if(s<=L[m]){const t=(s-L[m-1])/(L[m]-L[m-1]);return [lerp(pts[m-1][0],pts[m][0],t),lerp(pts[m-1][1],pts[m][1],t)];}return pts[pts.length-1];};
+  function drawA(st,c){
+    const V=View(st,0,0.9,2.9);st.view=V;
+    // material
+    c.fillStyle="#18202a";c.beginPath();c.moveTo(0,V.Y(top));c.lineTo(V.X(-Math.sin(arcHalf)),V.Y(top));
+    for(let a=-arcHalf;a<=arcHalf+1e-9;a+=arcHalf/40)c.lineTo(V.X(Math.sin(a)),V.Y(1-Math.cos(a)));
+    c.lineTo(st.w,V.Y(top));c.lineTo(st.w,st.h);c.lineTo(0,st.h);c.closePath();c.fill();
+    c.strokeStyle="rgba(200,212,228,0.6)";c.lineWidth=1.4;c.beginPath();c.moveTo(0,V.Y(top));c.lineTo(V.X(-Math.sin(arcHalf)),V.Y(top));
+    for(let a=-arcHalf;a<=arcHalf+1e-9;a+=arcHalf/40)c.lineTo(V.X(Math.sin(a)),V.Y(1-Math.cos(a)));c.lineTo(st.w,V.Y(top));c.stroke();
+    // normals
+    for(let k=1;k<hits.length;k+=3){const H=hits[k];const q=H.q,n=H.n;arrow(c,V.X(q[0]),V.Y(q[1]),V.X(q[0]+n[0]*0.32),V.Y(q[1]+n[1]*0.32),"rgba(79,209,165,0.75)",1.1,5);}
+    // faint paths
+    c.save();c.globalAlpha=0.22;for(const p of paths){c.strokeStyle=P.light;c.lineWidth=1;c.beginPath();p.pts.forEach((q,m)=>m?c.lineTo(V.X(q[0]),V.Y(q[1])):c.moveTo(V.X(q[0]),V.Y(q[1])));c.stroke();}c.restore();
+    // photons
+    paths.forEach((p,k)=>{const Lt=p.L[p.L.length-1];const s=((S.t*0.55+k*0.137)%1)*(Lt+0.4);
+      for(let m=0;m<7;m++){const q=at(p,s-m*0.05);if(s-m*0.05<0)break;dot(c,V.X(q[0]),V.Y(q[1]),m?2.2-m*0.22:2.6,`rgba(255,${200-m*8},${120-m*10},${1-m*0.13})`);}});
+    label(c,"n̂",V.X(hits[1].q[0]+hits[1].n[0]*0.4),V.Y(hits[1].q[1]+hits[1].n[1]*0.4),P.tan,"center");
+    label(c,"截面内：法向 n̂ ⟂ ŝ",12,16,P.text);
+    label(c,"出射方向铺成扇面",12,34,P.dim);}
+  // pseudo-3D projection: p=[a (along s), c (depth), b (up)]
+  const yaw=-28*DEG,pitch=20*DEG;
+  const pr=(V,p)=>{const x=p[0]*Math.cos(yaw)-p[1]*Math.sin(yaw),y1=p[0]*Math.sin(yaw)+p[1]*Math.cos(yaw);
+    return [V.X(x),V.Y(p[2]*Math.cos(pitch)-y1*Math.sin(pitch))];};
+  function drawB(st,c){
+    const V=View(st,0,0.35,4.1);st.view=V;const b=S.beta,L=1.55,cb=Math.cos(b),sb=Math.sin(b);
+    const r=phi=>[cb,sb*Math.cos(phi),sb*Math.sin(phi)];
+    // surface patch
+    const q1=pr(V,[-2.3,-1.1,0]),q2=pr(V,[2.3,-1.1,0]),q3=pr(V,[2.3,1.1,0]),q4=pr(V,[-2.3,1.1,0]);
+    c.fillStyle="rgba(190,204,222,0.05)";c.strokeStyle="rgba(190,204,222,0.16)";c.lineWidth=1;c.beginPath();c.moveTo(...q1);c.lineTo(...q2);c.lineTo(...q3);c.lineTo(...q4);c.closePath();c.fill();c.stroke();
+    // lower (blocked) half
+    for(let k=1;k<12;k++){const ph=Math.PI+k*Math.PI/12;const t=r(ph);const e=pr(V,[L*t[0],L*t[1],L*t[2]]);const o=pr(V,[0,0,0]);line(c,o[0],o[1],e[0],e[1],"rgba(255,181,71,0.13)",1,[3,4]);}
+    // cone fill upper half
+    const o=pr(V,[0,0,0]);c.fillStyle="rgba(255,181,71,0.08)";c.beginPath();c.moveTo(...o);
+    for(let k=0;k<=48;k++){const t=r(k*Math.PI/48);c.lineTo(...pr(V,[L*t[0],L*t[1],L*t[2]]));}c.closePath();c.fill();
+    for(let k=0;k<=12;k++){const t=r(k*Math.PI/12);const e=pr(V,[L*t[0],L*t[1],L*t[2]]);line(c,o[0],o[1],e[0],e[1],"rgba(255,181,71,0.34)",1);}
+    // rim ellipse
+    c.strokeStyle="rgba(255,181,71,0.55)";c.lineWidth=1.2;c.beginPath();for(let k=0;k<=64;k++){const t=r(k*Math.PI/64);const e=pr(V,[L*t[0],L*t[1],L*t[2]]);k?c.lineTo(...e):c.moveTo(...e);}c.stroke();
+    c.setLineDash([3,4]);c.strokeStyle="rgba(255,181,71,0.18)";c.beginPath();for(let k=0;k<=64;k++){const t=r(Math.PI+k*Math.PI/64);const e=pr(V,[L*t[0],L*t[1],L*t[2]]);k?c.lineTo(...e):c.moveTo(...e);}c.stroke();c.setLineDash([]);
+    // scratch axis
+    const a0=pr(V,[-2.3,0,0]),a1=pr(V,[2.3,0,0]);line(c,a0[0],a0[1],a1[0],a1[1],"rgba(200,212,228,0.55)",3);
+    const ah=pr(V,[1.9,0,0]);arrow(c,ah[0],ah[1],a1[0],a1[1],"rgba(200,212,228,0.8)",1.4,8);
+    label(c,"槽轴 ŝ",a1[0]-4,a1[1]+16,P.text,"right");
+    // incident
+    const inc=pr(V,[-L*cb,0,L*sb]);arrow(c,inc[0],inc[1],o[0],o[1],P.light,2.2,8);label(c,"d̂",inc[0]-6,inc[1]-8,P.light,"right");
+    const fi=pr(V,[-L*cb,0,0]);line(c,inc[0],inc[1],fi[0],fi[1],"rgba(238,242,246,0.5)",1,[3,3]);
+    // sweeping ray
+    const ph=Math.PI/2+(Math.PI/2-0.18)*Math.sin(S.t*0.9);const t=r(ph);const e=pr(V,[L*t[0],L*t[1],L*t[2]]);
+    arrow(c,o[0],o[1],e[0],e[1],"#ffd48f",2.4,8);dot(c,e[0],e[1],3,"#fff3dc");label(c,"r̂",e[0]+8,e[1]-6,"#ffd48f");
+    const fa=pr(V,[L*cb,0,0]);line(c,e[0],e[1],fa[0],fa[1],"rgba(238,242,246,0.5)",1,[3,3]);
+    dot(c,fa[0],fa[1],3.2,P.white);dot(c,fi[0],fi[1],3.2,P.white);
+    label(c,"L cos β",fa[0],fa[1]+16,P.white,"center");label(c,"L cos β",fi[0],fi[1]+16,P.white,"center");
+    label(c,"β = "+Math.round(b/DEG)+"°，半顶角 = β",12,16,P.text);
+    label(c,"所有出射光落到轴上同一点",12,34,P.dim);}
+  const tick=()=>{if(RM)return false;S.t=performance.now()/1000;return true;};
+  A.tick=tick;B.tick=tick;
+  slider("cone-b",v=>v+"°",v=>{S.beta=v*DEG;B.req();});
+})();
+
+/* ================= §2 PROBE ================= */
+(function(){
+  const S={u:0.30,v:0.20,R:1.15,i:35*DEG,h:4,Q:[-0.62,-0.34],locus:false,seek:null};
+  const A=Stage($("#cv-side"),drawSide),B=Stage($("#cv-probe"),drawTop);
+  let segs={key:"",s:[]};
+  const cur=()=>{const sI=Math.sin(S.i),tI=Math.tan(S.i);return terms(S.Q[0],S.Q[1],S.u,S.v,S.h,sI,tI);};
+  function readout(){const [ds,rs]=cur();$("#p-ds").textContent=fm(ds);$("#p-rs").textContent=fm(rs);$("#p-df").textContent=fm(ds-rs);
+    const lit=Math.abs(ds-rs)<0.006;const pl=$("#p-st");pl.textContent=lit?"亮":"暗";pl.className="pill"+(lit?" on":"");}
+  function drawSide(st,c){
+    const tI=Math.tan(S.i),sI=Math.sin(S.i),cI=Math.cos(S.i),h=S.h,Ey=-h*tI;
+    const V=FitView(st,Math.min(Ey,S.v-S.R)-0.35,S.v+S.R+0.9,-0.45,h+0.45,18);st.view=V;
+    // ground
+    line(c,0,V.Y(0),st.w,V.Y(0),"rgba(200,212,228,0.35)",1);
+    c.fillStyle="rgba(190,204,222,0.05)";c.fillRect(0,V.Y(0),st.w,st.h-V.Y(0));
+    line(c,V.X(S.v-S.R),V.Y(0),V.X(S.v+S.R),V.Y(0),"#8a97a8",4);
+    // incident rays
+    const L=(S.v+S.R+0.9-Math.min(Ey,S.v-S.R))*0.55+0.6;
+    for(const y0 of [-0.8,-0.4,0,0.4,0.8]){const yy=y0;const sx=V.X(yy+sI*L),sy=V.Y(cI*L);
+      arrow(c,sx,sy,V.X(yy),V.Y(0),y0===0?P.light:"rgba(255,181,71,0.4)",y0===0?2:1.2,y0===0?8:6);}
+    // normal & angles
+    line(c,V.X(0),V.Y(0),V.X(0),V.Y(Math.min(h,1.2)*0.9),"rgba(238,242,246,0.4)",1,[3,3]);
+    const rr=26;c.strokeStyle="rgba(238,242,246,0.7)";c.lineWidth=1;
+    c.beginPath();c.arc(V.X(0),V.Y(0),rr,-Math.PI/2,-Math.PI/2+S.i);c.stroke();
+    c.beginPath();c.arc(V.X(0),V.Y(0),rr,-Math.PI/2-S.i,-Math.PI/2);c.stroke();
+    label(c,"i",V.X(0)+rr*0.55,V.Y(0)-rr-8,P.white,"center");label(c,"i",V.X(0)-rr*0.55,V.Y(0)-rr-8,P.white,"center");
+    // reflected O->E and Q->E
+    arrow(c,V.X(0),V.Y(0),V.X(Ey),V.Y(h),P.eye,2,8);
+    const yq=S.Q[1];line(c,V.X(yq),V.Y(0),V.X(Ey),V.Y(h),"rgba(90,167,255,0.6)",1.2,[5,4]);
+    dot(c,V.X(yq),V.Y(0),3.5,P.white);label(c,"Q",V.X(yq),V.Y(0)+14,P.white,"center");
+    // h dimension
+    line(c,V.X(Ey),V.Y(0),V.X(Ey),V.Y(h),"rgba(238,242,246,0.3)",1,[2,4]);label(c,"h",V.X(Ey)-8,V.Y(h/2),P.white,"right");
+    // eye
+    const ex=V.X(Ey),eyY=V.Y(h);c.fillStyle=P.bg;c.strokeStyle=P.eye;c.lineWidth=1.6;c.beginPath();c.ellipse(ex,eyY,9,5.5,0,0,TAU);c.fill();c.stroke();dot(c,ex,eyY,2.4,P.eye);
+    label(c,"E",ex+13,eyY-10,P.eye);
+    markO(c,V,0,0);label(c,"盘（投影）",V.X(S.v+S.R),V.Y(0)-12,P.dim,"right");}
+  function drawTop(st,c){
+    const V=View(st,0.08,0.0,3.0);st.view=V;const sI=Math.sin(S.i),tI=Math.tan(S.i);
+    grooves(c,V,S.u,S.v,S.R);
+    const [qx,qy]=S.Q,rho=Math.hypot(qx-S.u,qy-S.v);
+    if(rho<S.R)circ(c,V.X(S.u),V.Y(S.v),rho*V.s,"rgba(190,204,222,0.5)",1.3);
+    if(S.locus){const key=[S.u,S.v,S.i,S.h,st.w,st.h].join();
+      if(segs.key!==key)segs={key,s:contour((x,y)=>Fraw(x,y,S.u,S.v,S.h,sI,tI,1),V.x0,V.x1,V.y0,V.y1,Math.round(st.w/3),Math.round(st.h/3))};
+      c.save();c.beginPath();c.arc(V.X(S.u),V.Y(S.v),S.R*V.s,0,TAU);c.clip();drawSegs(c,V,segs.s,P.light,2.2);c.restore();
+      drawSegs(c,V,segs.s,P.light,1,[2,4],0.35);}
+    markO(c,V);markC(c,V,S.u,S.v);
+    const [ds,rs]=cur();const lit=Math.abs(ds-rs)<0.006;
+    let sx=qy-S.v,sy=S.u-qx;const n=Math.hypot(sx,sy)||1;sx/=n;sy/=n;
+    const ex=-qx,ey=-S.h*tI-qy,en=Math.hypot(ex,ey,S.h);const rh=[ex/en,ey/en],dh=[0,-sI];
+    const Ls=0.85,X=V.X(qx),Y=V.Y(qy),s=V.s;
+    if(lit){const g=c.createRadialGradient(X,Y,0,X,Y,34);g.addColorStop(0,"rgba(255,214,150,0.95)");g.addColorStop(1,"rgba(255,181,71,0)");c.fillStyle=g;c.beginPath();c.arc(X,Y,34,0,TAU);c.fill();}
+    line(c,X-sx*1.0*s,Y+sy*1.0*s,X+sx*1.0*s,Y-sy*1.0*s,"rgba(79,209,165,0.55)",1.2);
+    arrow(c,X,Y,X+sx*0.42*s,Y-sy*0.42*s,P.tan,2,7);label(c,"ŝ",X+sx*0.5*s+6,Y-sy*0.5*s,P.tan);
+    const tip=(v)=>[X+v[0]*Ls*s,Y-v[1]*Ls*s];
+    const foot=(v)=>{const k=v[0]*sx+v[1]*sy;return [X+sx*k*Ls*s,Y-sy*k*Ls*s];};
+    const td=tip(dh),tr=tip(rh),fd=foot(dh),fr=foot(rh);
+    arrow(c,X,Y,td[0],td[1],P.light,2,7);arrow(c,X,Y,tr[0],tr[1],P.eye,2,7);
+    line(c,td[0],td[1],fd[0],fd[1],"rgba(255,181,71,0.7)",1,[3,3]);line(c,tr[0],tr[1],fr[0],fr[1],"rgba(90,167,255,0.7)",1,[3,3]);
+    const nx=-sy,ny=-sx; // screen-normal to ŝ line
+    line(c,fd[0]-nx*7,fd[1]-ny*7,fd[0]+nx*7,fd[1]+ny*7,P.light,2.4);line(c,fr[0]-nx*7,fr[1]-ny*7,fr[0]+nx*7,fr[1]+ny*7,P.eye,2.4);
+    label(c,"d̂",td[0]+8,td[1],P.light);label(c,"r̂",tr[0]+8,tr[1],P.eye);
+    circ(c,X,Y,6,P.white,1.8);circ(c,X,Y,12,"rgba(238,242,246,0.35)",1,[3,3]);label(c,"Q",X+10,Y-14,P.white);
+    label(c,lit?"垂足重合：亮":"垂足不重合：暗",12,16,lit?"#ffd48f":P.dim);}
+  const reqAll=()=>{A.req();B.req();readout();};
+  dragger(B,[{get:()=>S.Q,start:()=>{S.seek=null;},set:(x,y)=>{S.Q=[x,y];reqAll();}}]);
+  slider("p-i",v=>v+"°",v=>{S.i=v*DEG;reqAll();});
+  slider("p-h",v=>fmtH(logMap(v,1.5,12)),v=>{S.h=logMap(v,1.5,12);reqAll();});
+  toggleBtn($("#p-locus"),false,on=>{S.locus=on;B.req();});
+  $("#p-seek").addEventListener("click",()=>{
+    const sI=Math.sin(S.i),tI=Math.tan(S.i),rho=Math.max(0.05,Math.hypot(S.Q[0]-S.u,S.Q[1]-S.v)),th0=Math.atan2(S.Q[1]-S.v,S.Q[0]-S.u);
+    const f=th=>{const x=S.u+rho*Math.cos(th),y=S.v+rho*Math.sin(th);const [a,b]=terms(x,y,S.u,S.v,S.h,sI,tI);return a-b;};
+    const roots=[];const N=720;let pv=f(0);
+    for(let k=1;k<=N;k++){const th=k*TAU/N,cv=f(th);if((pv>0)!==(cv>0)){let lo=th-TAU/N,hi=th,flo=pv;for(let m=0;m<40;m++){const mid=(lo+hi)/2,fm_=f(mid);if((fm_>0)===(flo>0)){lo=mid;flo=fm_;}else hi=mid;}roots.push((lo+hi)/2);}pv=cv;}
+    if(!roots.length)return;
+    let best=roots[0],bd=9;for(const r of roots){let d=Math.atan2(Math.sin(r-th0),Math.cos(r-th0));if(Math.abs(d)<bd){bd=Math.abs(d);best=r;}}
+    const d=Math.atan2(Math.sin(best-th0),Math.cos(best-th0));S.seek={th0,d,rho,t:0};
+  });
+  B.tick=dt=>{if(!S.seek)return false;const k=S.seek;k.t=Math.min(1,k.t+dt/(RM?0.01:1.1));const th=k.th0+k.d*ease(k.t);
+    S.Q=[S.u+k.rho*Math.cos(th),S.v+k.rho*Math.sin(th)];A.req();readout();if(k.t>=1)S.seek=null;return true;};
+  readout();
+})();
+
+/* ================= §3 LOCUS ================= */
+(function(){
+  const S={u:0.30,v:0.20,R:1.15,i:35*DEG,lh:Math.log10(3),spur:true,lim:true,play:null};
+  const st=Stage($("#cv-locus"),draw);let cache={key:""};
+  const hS=slider("l-h",v=>fmtH(Math.pow(10,3*v/1000)),v=>{S.lh=3*v/1000;upd();});
+  function upd(){st.req();const h=Math.pow(10,S.lh),tI=Math.tan(S.i),sI=Math.sin(S.i);
+    $("#l-off").textContent=fm(Math.abs(S.u)*S.R/(2*h*tI),4);
+    $("#l-k").textContent="("+fm(-S.u/(tI*tI),2)+", "+fm(S.v/(sI*sI),2)+")";}
+  function draw(st,c){
+    const V=View(st,0.02,0.02,3.3);st.view=V;const h=Math.pow(10,S.lh),sI=Math.sin(S.i),tI=Math.tan(S.i),s2=sI*sI,c2=1-s2;
+    grooves(c,V,S.u,S.v,S.R,0.1,0.08);
+    const key=[S.u,S.v,S.i,S.lh,st.w,st.h].join();
+    if(cache.key!==key){const nx=Math.round(st.w/3.2),ny=Math.round(st.h/3.2);
+      cache={key,t:contour((x,y)=>Fraw(x,y,S.u,S.v,h,sI,tI,1),V.x0,V.x1,V.y0,V.y1,nx,ny),
+        g:contour((x,y)=>Fraw(x,y,S.u,S.v,h,sI,tI,-1),V.x0,V.x1,V.y0,V.y1,nx,ny),
+        hy:contour((x,y)=>Hs(x,y,S.u,S.v,s2,c2),V.x0,V.x1,V.y0,V.y1,nx,ny)};}
+    if(S.lim){drawSegs(c,V,cache.hy,P.hyp,1.4,[7,5],0.9);line(c,V.X(S.u),0,V.X(S.u),st.h,"rgba(182,156,255,0.45)",1.2,[1,4]);markK(c,V,-S.u/(tI*tI),S.v/s2);}
+    if(S.spur)drawSegs(c,V,cache.g,P.spur,1.8,[5,4]);
+    drawSegs(c,V,cache.t,P.light,2.6);
+    markO(c,V);markC(c,V,S.u,S.v,"C",true);
+    label(c,"h = "+fmtH(h)+" R",12,16,P.white,"left",MONO);edgeLabels(c,st);}
+  st.tick=dt=>{if(!S.play)return false;const p=S.play;p.t=Math.min(1,p.t+dt/(RM?0.3:6));S.lh=lerp(p.a,3,ease(p.t));hS.set(Math.round(S.lh/3*1000));upd();
+    if(p.t>=1){S.play=null;$("#l-play").textContent="播放 h: 1 → 1000";}return true;};
+  $("#l-play").addEventListener("click",()=>{if(S.play){S.play=null;$("#l-play").textContent="播放 h: 1 → 1000";return;}
+    S.play={a:0,t:0};$("#l-play").textContent="暂停";});
+  dragger(st,[{get:()=>[S.u,S.v],set:(x,y)=>{const r=Math.hypot(x,y);if(r>0.95){x*=0.95/r;y*=0.95/r;}S.u=x;S.v=y;upd();}}]);
+  slider("l-i",v=>v+"°",v=>{S.i=v*DEG;upd();});
+  $("#l-spur").addEventListener("change",e=>{S.spur=e.target.checked;st.req();});
+  $("#l-lim").addEventListener("change",e=>{S.lim=e.target.checked;st.req();});
+})();
+
+/* ================= §4 RAYS + PLOT ================= */
+(function(){
+  const S={u:0.30,v:0.20,R:1,i:35*DEG,h:2.5,delta:0.02};
+  const A=Stage($("#cv-rays"),drawRays),B=Stage($("#cv-plot"),drawPlot);
+  const sI=Math.sin(S.i),cI=Math.cos(S.i),tI=Math.tan(S.i);
+  // precompute max|f| over disk vs h
+  const H=[],Mx=[];
+  (function(){const pts=[];const n=34;for(let a=0;a<n;a++)for(let b=0;b<n;b++){const x=S.u-S.R+2*S.R*(a+.5)/n,y=S.v-S.R+2*S.R*(b+.5)/n;
+      if((x-S.u)**2+(y-S.v)**2<=S.R*S.R)pts.push([x,y]);}
+    for(let j=0;j<=100;j++){const h=Math.pow(10,4*j/100);let m=0;for(const [x,y] of pts){const [a,b]=terms(x,y,S.u,S.v,h,sI,tI);m=Math.max(m,Math.abs(a-b));}H.push(h);Mx.push(m);}})();
+  const mAt=h=>{const lj=Math.log10(h)/4*100;const j=clamp(Math.floor(lj),0,99),t=lj-j;return Math.exp(lerp(Math.log(Mx[j]),Math.log(Mx[j+1]),t));};
+  function hStar(){for(let j=0;j<100;j++)if(Mx[j]>=S.delta&&Mx[j+1]<S.delta){const t=Math.log(Mx[j]/S.delta)/Math.log(Mx[j]/Mx[j+1]);return Math.pow(10,4*(j+t)/100);}return Mx[0]<S.delta?1:Infinity;}
+  function readout(){let mx=0;for(let k=0;k<=12;k++){const y=S.v-S.R+2*S.R*k/12;const ey=-S.h*tI-y,ez=S.h,en=Math.hypot(ey,ez);
+      const cosA=(ey*(-sI)+ez*cI)/en;mx=Math.max(mx,Math.acos(clamp(cosA,-1,1)));}
+    $("#c-ang").textContent=(mx/DEG).toFixed(2)+"°";const hs=hStar();$("#c-hs").textContent=isFinite(hs)?"≈ "+fmtH(hs)+" R":"> 10⁴ R";}
+  function drawRays(st,c){
+    const Ey=-S.h*tI,Ez=S.h;
+    const V=FitView(st,-2.25,1.65,-0.35,2.05,14);st.view=V;
+    line(c,0,V.Y(0),st.w,V.Y(0),"rgba(200,212,228,0.35)",1);c.fillStyle="rgba(190,204,222,0.05)";c.fillRect(0,V.Y(0),st.w,st.h-V.Y(0));
+    line(c,V.X(S.v-S.R),V.Y(0),V.X(S.v+S.R),V.Y(0),"#8a97a8",4);
+    const Lr=1.55;
+    for(let k=0;k<=8;k++){const y=S.v-S.R+2*S.R*k/8;const dy=Ey-y,dz=Ez,n=Math.hypot(dy,dz);
+      line(c,V.X(y),V.Y(0),V.X(y-sI*Lr),V.Y(cI*Lr),"rgba(154,166,180,0.55)",1,[4,4]);
+      const len=Math.min(Lr,n);arrow(c,V.X(y),V.Y(0),V.X(y+dy/n*len),V.Y(dz/n*len),P.eye,1.5,6);dot(c,V.X(y),V.Y(0),2.6,P.white);}
+    const inView=Ey>V.x0+0.05&&Ez<V.y1-0.05;
+    if(inView){const ex=V.X(Ey),ey=V.Y(Ez);c.fillStyle=P.bg;c.strokeStyle=P.eye;c.lineWidth=1.6;c.beginPath();c.ellipse(ex,ey,9,5.5,0,0,TAU);c.fill();c.stroke();dot(c,ex,ey,2.4,P.eye);label(c,"E",ex+13,ey-10,P.eye);}
+    else label(c,"E 在画面外（左上方）",12,st.h-14,P.dim);
+    label(c,"h = "+fmtH(S.h)+" R",12,16,P.white,"left",MONO);markO(c,V);}
+  function drawPlot(st,c){
+    const ml=52,mr=14,mt=16,mb=38,W=st.w-ml-mr,Hh=st.h-mt-mb;
+    const X=h=>ml+W*Math.log10(h)/4,Y=m=>mt+Hh*(-Math.log10(m))/4;
+    const hs=hStar();
+    // region bands
+    c.fillStyle="rgba(190,204,222,0.05)";c.fillRect(X(1),mt,X(10)-X(1),Hh);
+    if(isFinite(hs)){c.fillStyle="rgba(90,167,255,0.09)";c.fillRect(X(Math.min(hs,1e4)),mt,X(1e4)-X(Math.min(hs,1e4)),Hh);}
+    // grid + ticks
+    c.font=MONO;c.textBaseline="middle";
+    const sup=["1","10","10²","10³","10⁴"],sub=["1","10⁻¹","10⁻²","10⁻³","10⁻⁴"];
+    for(let k=0;k<=4;k++){const x=X(Math.pow(10,k)),y=Y(Math.pow(10,-k));
+      line(c,x,mt,x,mt+Hh,P.grid,1);line(c,ml,y,ml+W,y,P.grid,1);
+      c.fillStyle=P.dim;c.textAlign="center";c.fillText(sup[k],x,mt+Hh+12);c.textAlign="right";c.fillText(sub[k],ml-6,y);}
+    line(c,ml,mt,ml,mt+Hh,P.axis,1);line(c,ml,mt+Hh,ml+W,mt+Hh,P.axis,1);
+    c.font=FONT;c.fillStyle=P.dim;c.textAlign="center";c.fillText("眼睛高度 h / R",ml+W/2,st.h-9);
+    c.save();c.translate(13,mt+Hh/2);c.rotate(-Math.PI/2);c.fillText("盘内 max |d̂·ŝ − r̂·ŝ|",0,0);c.restore();
+    // slope -1 guide
+    const m100=mAt(100);c.save();c.beginPath();c.rect(ml,mt,W,Hh);c.clip();
+    line(c,X(1),Y(m100*100),X(1e4),Y(m100/100),"rgba(135,147,162,0.75)",1,[5,5]);
+    // delta line
+    line(c,ml,Y(S.delta),ml+W,Y(S.delta),P.eye,1.4);
+    // curve
+    c.strokeStyle=P.light;c.lineWidth=2.2;c.beginPath();H.forEach((h,j)=>j?c.lineTo(X(h),Y(Mx[j])):c.moveTo(X(h),Y(Mx[j])));c.stroke();
+    if(isFinite(hs)&&hs<=1e4){line(c,X(hs),mt,X(hs),mt+Hh,"rgba(90,167,255,0.6)",1,[3,3]);dot(c,X(hs),Y(S.delta),4,P.eye);}
+    c.restore();
+    label(c,"δ = "+(S.delta/DEG).toFixed(2)+"°",ml+W-4,Y(S.delta)-10,P.eye,"right");
+    const cx=X(S.h),cy=Y(mAt(S.h));dot(c,cx,cy,5,P.white);label(c,"当前 h",cx+8,cy-10,P.white);
+    // region labels
+    const yl=mt+12;label(c,"h ~ R",X(Math.sqrt(10)),yl,P.dim,"center");
+    if(isFinite(hs)&&hs<1e4){label(c,"整盘都亮",Math.min(X(Math.sqrt(hs*1e4)),ml+W-30),yl,P.eye,"center");
+      if(hs>14)label(c,"双曲线区",X(Math.sqrt(10*hs)),yl,P.light,"center");else label(c,"无清晰双曲线区",X(12),yl+16,P.light,"left");}
+    else label(c,"双曲线区",X(300),yl,P.light,"center");}
+  const reqAll=()=>{A.req();B.req();readout();};
+  slider("c-h",v=>fmtH(Math.pow(10,3*v/1000)),v=>{S.h=Math.pow(10,3*v/1000);reqAll();});
+  slider("c-d",v=>(logMap(v,0.003,0.08)/DEG).toFixed(2)+"°",v=>{S.delta=logMap(v,0.003,0.08);reqAll();});
+})();
+
+/* ================= §5 NORMALISE ================= */
+(function(){
+  const S={u:0.40,v:0.30,i:40*DEG,p:0,anim:null};
+  const st=Stage($("#cv-norm"),draw);
+  const steps=[...document.querySelectorAll("#n-steps li")],sbtn=[...document.querySelectorAll("[data-step]")];
+  function geom(){const sI=Math.sin(S.i),cI=Math.cos(S.i),tI=Math.tan(S.i),s2=sI*sI,t2=tI*tI;
+    const K=[-S.u/t2,S.v/s2],C0=-S.u*S.v*cI*cI/(s2*s2),k=Math.sqrt(Math.abs(S.u*S.v))*cI/s2,sg=Math.sign(-S.u*S.v)||1;return {K,C0,k,sg};}
+  function T(g,p,x,y){const a=ease(clamp(p,0,1)),b=ease(clamp(p-1,0,1)),c3=ease(clamp(p-2,0,1));
+    let X=x-a*g.K[0],Y=y-a*g.K[1];const m=Math.exp(-b*Math.log(g.k));X*=m;Y*=m;Y*=lerp(1,g.sg,c3);return [X,Y];}
+  function readout(){const g=geom(),sI=Math.sin(S.i),cI=Math.cos(S.i),s2=sI*sI;
+    $("#n-k").textContent="("+fm(g.K[0],2)+", "+fm(g.K[1],2)+")";$("#n-kk").textContent=fm(g.k,3);$("#n-sg").textContent=g.sg>0?"+1":"−1";
+    const xo=(0-g.K[0])/g.k,xc=(S.u-g.K[0])/g.k;$("#n-oc").textContent=fm(xo,2)+" , "+fm(xc,2);}
+  function draw(st,c){
+    const g=geom();
+    // fixed view: union of key points over all stages, plus the standard window
+    let xs=[-2.6,2.6],ys=[-2.6,2.6];
+    for(const p of [0,1,2,3])for(const q of [[0,0],[S.u,S.v],g.K]){const r=T(g,p,q[0],q[1]);xs.push(r[0]);ys.push(r[1]);}
+    const xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+    const padx=(xmax-xmin)*0.08,pady=(ymax-ymin)*0.08;
+    const V=FitView(st,xmin-padx,xmax+padx,ymin-pady,ymax+pady,10);st.view=V;
+    // grid
+    const span=Math.max(V.x1-V.x0,V.y1-V.y0);const e=Math.pow(10,Math.floor(Math.log10(span/8)));const stp=[1,2,5,10].map(m=>m*e).find(s=>span/s<=12)||e*10;
+    c.strokeStyle=P.grid;c.lineWidth=1;c.beginPath();
+    for(let x=Math.ceil(V.x0/stp)*stp;x<=V.x1;x+=stp){c.moveTo(V.X(x),0);c.lineTo(V.X(x),st.h);}
+    for(let y=Math.ceil(V.y0/stp)*stp;y<=V.y1;y+=stp){c.moveTo(0,V.Y(y));c.lineTo(st.w,V.Y(y));}c.stroke();
+    line(c,V.X(0),0,V.X(0),st.h,P.axis,1);line(c,0,V.Y(0),st.w,V.Y(0),P.axis,1);
+    const pr=S.p>=1.5;label(c,pr?"x′":"x",st.w-12,V.Y(0)-10,P.dim,"right");label(c,pr?"y′":"y",V.X(0)+8,12,P.dim);
+    // reference y=1/x
+    const refA=clamp(S.p-1.4,0,1)*0.75;
+    if(refA>0){c.save();c.globalAlpha=refA;c.setLineDash([5,5]);c.strokeStyle=P.white;c.lineWidth=1.2;
+      for(const sgn of [1,-1]){c.beginPath();let f=true;for(let k=0;k<=300;k++){const x=sgn*Math.exp(lerp(Math.log(1e-3),Math.log(60),k/300));const X=V.X(x),Y=V.Y(1/x);if(Y<-50||Y>st.h+50){f=true;continue;}f?c.moveTo(X,Y):c.lineTo(X,Y);f=false;}c.stroke();}c.restore();}
+    // asymptotes
+    const Kt=T(g,S.p,g.K[0],g.K[1]);line(c,V.X(Kt[0]),0,V.X(Kt[0]),st.h,"rgba(255,107,122,0.5)",1,[6,5]);line(c,0,V.Y(Kt[1]),st.w,V.Y(Kt[1]),"rgba(255,107,122,0.5)",1,[6,5]);
+    // hyperbola
+    c.strokeStyle=P.hyp;c.lineWidth=2.6;const big=span*6;
+    for(const sgn of [1,-1]){c.beginPath();let f=true;for(let k=0;k<=400;k++){const tau=sgn*Math.exp(lerp(Math.log(Math.abs(g.C0)/big+1e-9),Math.log(big),k/400));
+        const r=T(g,S.p,g.K[0]+tau,g.K[1]+g.C0/tau);const X=V.X(r[0]),Y=V.Y(r[1]);if(X<-80||X>st.w+80||Y<-80||Y>st.h+80){f=true;continue;}f?c.moveTo(X,Y):c.lineTo(X,Y);f=false;}c.stroke();}
+    // key points
+    const O=T(g,S.p,0,0),Cc=T(g,S.p,S.u,S.v);
+    markO(c,V,O[0],O[1]);markC(c,V,Cc[0],Cc[1]);markK(c,V,Kt[0],Kt[1]);
+    const names=["原式（x, y）","① 平移：K → 原点","② 缩放：除以 k","③ 翻转：y′ = 1/x′"];
+    label(c,names[Math.round(clamp(S.p,0,3))],12,16,P.white);}
+  function setStep(n){const on=Math.round(n);steps.forEach((li,k)=>li.classList.toggle("on",k===on));sbtn.forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.step===on)));}
+  function goTo(target,dur){S.anim={a:S.p,b:target,t:0,dur:RM?0.01:dur};}
+  st.tick=dt=>{if(!S.anim)return false;const A=S.anim;A.t=Math.min(1,A.t+dt/A.dur);S.p=lerp(A.a,A.b,A.t);setStep(S.p);
+    if(A.t>=1){S.anim=null;if(A.chain&&A.b<3){goTo(A.b+1,1.3);S.anim.chain=true;}}return true;};
+  sbtn.forEach(b=>b.addEventListener("click",()=>{const t=+b.dataset.step;goTo(t,Math.max(0.6,Math.abs(t-S.p)*1.1));}));
+  $("#n-play").addEventListener("click",()=>{S.p=0;setStep(0);goTo(1,1.3);S.anim.chain=true;});
+  const snap=v=>{let x=v/100;if(Math.abs(x)<0.15)x=x<0?-0.15:0.15;return x;};
+  slider("n-u",v=>fm(snap(v),2),v=>{S.u=snap(v);st.req();readout();});
+  slider("n-v",v=>fm(snap(v),2),v=>{S.v=snap(v);st.req();readout();});
+  slider("n-i",v=>v+"°",v=>{S.i=v*DEG;st.req();readout();});
+})();
+
+/* ================= §6 DIAMETER ================= */
+(function(){
+  const S={u:0.30,v:0.20,R:1.15,i:30*DEG,auto:false,t:0};
+  const st=Stage($("#cv-diam"),draw);let cache={key:""};
+  const iS=slider("d-i",v=>v+"°",v=>{S.i=v*DEG;upd();});
+  function upd(){st.req();}
+  function draw(st,c){
+    const V=View(st,0.05,0.05,3.2);st.view=V;const sI=Math.sin(S.i),s2=sI*sI,c2=1-s2,t2=s2/c2;
+    grooves(c,V,S.u,S.v,S.R,0.1,0.08);
+    const key=[S.u,S.v,S.i,st.w,st.h].join();
+    if(cache.key!==key)cache={key,s:contour((x,y)=>Hs(x,y,S.u,S.v,s2,c2),V.x0,V.x1,V.y0,V.y1,Math.round(st.w/2.6),Math.round(st.h/2.6))};
+    // limits
+    const L=6;if(Math.hypot(S.u,S.v)>1e-6){const n=Math.hypot(S.u,S.v);line(c,V.X(-S.u/n*L),V.Y(-S.v/n*L),V.X(S.u/n*L),V.Y(S.v/n*L),"rgba(238,242,246,0.55)",1.3,[1,4]);}
+    line(c,V.X(0),0,V.X(0),st.h,"rgba(79,209,165,0.6)",1.3,[1,4]);line(c,0,V.Y(S.v),st.w,V.Y(S.v),"rgba(79,209,165,0.6)",1.3,[1,4]);
+    drawSegs(c,V,cache.s,P.hyp,1.4,[6,5],0.85);
+    c.save();c.beginPath();c.arc(V.X(S.u),V.Y(S.v),S.R*V.s,0,TAU);c.clip();
+    c.shadowColor="rgba(255,181,71,0.8)";c.shadowBlur=10;drawSegs(c,V,cache.s,P.light,3);c.restore();
+    const K=[-S.u/t2,S.v/s2];markK(c,V,K[0],K[1]);markO(c,V);markC(c,V,S.u,S.v,"C",true);
+    label(c,"i = "+Math.round(S.i/DEG)+"°",12,16,P.white,"left",MONO);edgeLabels(c,st);
+    // readout: deviation from line OC on the O–C branch within disk
+    const n=Math.hypot(S.u,S.v);let dev=0;const sx=Math.sign(S.u-K[0]),sy=Math.sign(S.v-K[1]);const seg=cache.s;
+    for(let k=0;k<seg.length;k+=2){const x=seg[k],y=seg[k+1];if((x-S.u)**2+(y-S.v)**2>S.R*S.R)continue;
+      if(sx&&Math.sign(x-K[0])!==sx)continue;if(sy&&Math.sign(y-K[1])!==sy)continue;
+      if(n>1e-6)dev=Math.max(dev,Math.abs(S.v*x-S.u*y)/n);}
+    $("#d-dev").textContent=n>1e-6?fm(dev/S.R,3)+" R":"—";
+    $("#d-k").textContent="("+(Math.abs(K[0])>99?"∞":fm(K[0],2))+", "+(Math.abs(K[1])>99?"∞":fm(K[1],2))+")";}
+  st.tick=dt=>{if(!S.auto)return false;S.t+=dt;const deg=45+42*Math.sin(S.t*TAU/14-Math.PI/2);S.i=deg*DEG;iS.set(Math.round(deg));return true;};
+  toggleBtn($("#d-auto"),false,on=>{S.auto=on;if(on)S.t=Math.asin(clamp((S.i/DEG-45)/42,-1,1))/TAU*14+14/4;});
+  const presets=[[0.30,0.20],[0,0.40],[0.42,0]];
+  document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{const p=presets[+b.dataset.preset];S.u=p[0];S.v=p[1];upd();}));
+  dragger(st,[{get:()=>[S.u,S.v],set:(x,y)=>{const r=Math.hypot(x,y);if(r>0.95){x*=0.95/r;y*=0.95/r;}S.u=x;S.v=y;upd();}}]);
+})();
+
+})();
+</script>
+</body>
+</html>
